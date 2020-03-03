@@ -1,28 +1,45 @@
 body {
-  font-size: 16px;
+  font-size: 14px;
+  color: #24292e;
 }
 
 a {
   text-decoration: none;
+  color: #0366d6;
 }
 
 #toggle-form-btn {
   float: right;
 }
 
+/* No idea what I'm doing but I want links to be a bit darker if they are a parent node */
+.text-parent {
+  font-size: 16px;
+  color: #24292e;
+  font-weight: 600;
+}
+.text-parent a {
+  color: #004ca2;
+}
+/* Looks like I have to reset the value for child links because it all inherits */
+.text-child {
+  color: initial;
+  font-weight: initial;
+  font-size: 14px;
+}
+.text-child a {
+  color: #0366d6;
+}
+
+.favicon {
+  max-height: 18px;
+  float: left;
+  padding: 5px;
+}
 
 .display-none {
   display: none;
 }
-
-.text-bolded {
-  font-weight: bold;
-}
-
-.text-normal {
-  font-weight: normal;
-}
-
 
 .container {
   margin: 0 auto;

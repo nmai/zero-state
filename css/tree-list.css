@@ -19,7 +19,7 @@
   content: '';
   position: absolute;
   display: block;
-  background-color: #333;
+  background-color: #d1d5da;
 }
 .tree-list .tree-item:before {
   top: 0;
@@ -53,7 +53,7 @@
 .tree-list .tree-item > span {
   display: inline-block;
   padding: 0 5px;
-  border: 1px solid #333;
+  border: 1px solid #d1d5da;
 }
 .tree-list .tree-item > .tree-list {
   padding-top: 10px;

@@ -203,9 +203,9 @@ function renderTree(tree) {
     
     let childEl = document.createElement('li')
     childEl.id = 'listchild-' + node.name
-    childEl.className = nodeHasChildren(node) ? `tree-item text-bolded` : `tree-item text-normal`
+    childEl.className = nodeHasChildren(node) ? `tree-item text-parent` : `tree-item text-child`
     let contentNode = node.url
-      ? htmlToElement(`<span><a href="${node.url}">${node.name}</a></span>`)
+      ? htmlToElement(`<span><a href="${node.url}"><img src="${extractFaviconUrl(node.url)}" class="favicon">${node.name}</a></span>`)
       : htmlToElement(`<span>${node.name}</span>`)
     childEl.appendChild(contentNode)
     if (formOpen && !nodeHasChildren(node)) {
@@ -225,6 +225,27 @@ function renderTree(tree) {
     }
 
   }
+}
+
+function extractFaviconUrl(urlStr) {
+  let url = new URL(urlStr)
+  // @todo: only way to do favicons properly is to fetch their index.html and extract the true favicon name from the meta tags
+  // for now we will just make some guesses
+  let faviconPath = 'favicon.ico'
+  let faviconOrigin = url.origin
+  switch (url.host) {
+    case 'zoom.us':
+      faviconPath = 'zoom.ico'
+    break
+    case 'calendar.google.com':
+      faviconPath = 'googlecalendar/images/favicon_v2014_3.ico'
+    break
+    case 'www.figma.com':
+      faviconOrigin = 'https://static.figma.com'
+      faviconPath = 'app/icon/1/icon-128.png'
+    break
+  }
+  return `${faviconOrigin}/${faviconPath}`
 }
 
 function htmlToElement(html) {
