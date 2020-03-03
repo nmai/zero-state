@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>New Tab</title>
+	<link href="../../css/tree-list.css" rel="stylesheet" />
+	<link href="../../css/custom.css" rel="stylesheet" />
+</head>
+<body>
+
+	<div class="container" style="margin-top:30px">
+
+		<div class="row">
+			<!-- left side -->
+			<div class="col-md-9">
+				<!-- list -->
+				<ul id="list-group" class="tree-list"></ul>
+			</div>
+
+			<!-- right side -->
+			<div class="col-md-3">
+				<!-- toggle button to open menu -->
+				<a id="toggle-form-btn" href="#">[+]</a>
+				<!-- add links -->
+				<form id="newlink-form" class="display-none">
+					<label for="newlink-name">Name:</label><br>
+					<input type="text" id="newlink-name" name="newlink-name" autocomplete="off"><br>
+					<label for="newlink-url">URL:</label><br>
+					<input type="text" id="newlink-url" name="newlink-url" autocomplete="off"><br>
+					<label for="newlink-parent">Parent:</label><br>
+					<input type="text" id="newlink-parent" name="newlink-parent" autocomplete="off"><br>
+					<input type="submit" value="Add">
+				</form>
+			</div>
+
+		</div>
+
+	</div>
+
+	<!-- script load-->
+	<script src="../../js/script.js"></script>
+
+</body>
+</html>

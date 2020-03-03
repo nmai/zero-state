@@ -1,0 +1,54 @@
+body {
+  font-size: 16px;
+}
+
+a {
+  text-decoration: none;
+}
+
+#toggle-form-btn {
+  float: right;
+}
+
+
+.display-none {
+  display: none;
+}
+
+.text-bolded {
+  font-weight: bold;
+}
+
+.text-normal {
+  font-weight: normal;
+}
+
+
+.container {
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+.row {
+  margin-right: -15px;
+  margin-left: -15px;
+  display: flex;
+}
+
+.col-md-9 {
+  width: 75%;
+  float: left;
+  position: relative;
+  min-height: 1px;
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+.col-md-3 {
+  width: 25%;
+  float: left;
+  position: relative;
+  min-height: 1px;
+  padding-right: 15px;
+  padding-left: 15px;
+}
