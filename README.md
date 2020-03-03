@@ -4,20 +4,20 @@ New Tab page for lazies with too many links (Chrome extension)
 
 Created because all the "speed dial" extensions I could find on the Chrome webstore were either bloated (focused on background image and a million widgets more than bookmark functionality) or I straight up don't trust. Almost all ask for a bunch of permissions, including history, tabs, searches, and so on.
 
-Features:
+## Features:
 - Simple
 - Safe (tried anyway)
 - Beautiful (just kidding)
 - Ultralight - Vanilla JS + CSS, no third party libraries or bundles
 - Organic - Not even 1 preprocessor
 
-Install:
+### Install:
 - chrome://extensions
 - Developer Mode: Enable
 - Load unpacked... navigate to this folder... done.
 - You can right click on menu item icon and Hide it, it's not necessary.
 
-How to use:
+### How to use:
 - Click the [+] icon to add a new node
 - Type a name (Required), must be unique.
 - URL not required, if none it will just be a black node, useful as a folder
