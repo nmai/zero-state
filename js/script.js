@@ -244,6 +244,10 @@ function extractFaviconUrl(urlStr) {
       faviconOrigin = 'https://static.figma.com'
       faviconPath = 'app/icon/1/icon-128.png'
     break
+    case 'www.atlassian.com':
+      faviconOrigin = 'https://wac-cdn.atlassian.com'
+      faviconPath = 'assets/img/favicons/atlassian/favicon.png'
+    break
   }
   return `${faviconOrigin}/${faviconPath}`
 }

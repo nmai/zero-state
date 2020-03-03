@@ -29,7 +29,7 @@ It is my pleasure to introduce this lovely intuitive UX/UI to the world.
 
 Early Screenshot:
 
-![screenshot](screenshot1.png)
+![screenshot](misc/screenshot2.png)
 
 
 Contributing:

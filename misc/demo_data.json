@@ -1,0 +1,68 @@
+[
+  {
+    "name": "Zoom Meetings"
+  },
+  {
+    "name": "Daily Standup",
+    "parent": "Zoom Meetings",
+    "url": "https://zoom.us/my/asdf"
+  },
+  {
+    "name": "General"
+  },
+  {
+    "name": "Main JIRA board",
+    "parent": "General",
+    "url": "https://www.atlassian.com/software/jira"
+  },
+  {
+    "name": "Github Repos"
+  },
+  {
+    "name": "API",
+    "parent": "Github Repos",
+    "url": "https://github.com"
+  },
+  {
+    "name": "Frontend",
+    "parent": "Github Repos",
+    "url": "https://github.com"
+  },
+  {
+    "name": "Jenkins",
+    "url": "https://jenkins.io/"
+  },
+  {
+    "name": "Project X"
+  },
+  {
+    "name": "[Project X] Figma",
+    "parent": "Project X",
+    "url": "https://www.figma.com/"
+  },
+  {
+    "name": "[Project X] Board",
+    "parent": "Project X",
+    "url": "https://www.atlassian.com/software/jira"
+  },
+  {
+    "name": "[Project X] Confluence",
+    "parent": "Project X",
+    "url": "https://www.atlassian.com/software/confluence"
+  },
+  {
+    "name": "Development",
+    "parent": "Jenkins",
+    "url": "https://jenkins.io/"
+  },
+  {
+    "name": "Staging",
+    "parent": "Jenkins",
+    "url": "https://jenkins.io/"
+  },
+  {
+    "name": "Calendar (Work)",
+    "parent": "General",
+    "url": "https://calendar.google.com/"
+  }
+]
