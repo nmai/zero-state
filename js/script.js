@@ -153,7 +153,7 @@ function makeTree(rawList) {
   let nonrootList = []
   for (let item of cloneList) {
     if (item.parent != null)
-      nonrootList.push(item)
+      nonrootList.unshift(item)
     else
       root.children.push(item)
   }
@@ -196,9 +196,9 @@ function renderTree(tree) {
   let treeIndex = 0 // refers to the list group number.. i.e. vertical column
   let queue = tree.children.slice(0)
   while (queue.length) {
-    let node = queue.pop()
+    let node = queue.shift()
     if (nodeHasChildren(node))
-      queue = [...node.children, ...queue]
+      queue = [...queue, ...node.children]
 
     let parentEl
     if (!node.parent) {
