@@ -19,7 +19,7 @@ let form = document.getElementById('newlink-form')
 let nameField = document.getElementById('newlink-name')
 let urlField = document.getElementById('newlink-url')
 let parentField = document.getElementById('newlink-parent')
-let listEl = document.getElementById('list-group')
+let listsContainer = document.getElementById('lists-container')
 
 let formOpen = false;
 // pre-processed
@@ -190,16 +190,26 @@ function makeTree(rawList) {
 function renderTree(tree) {
   console.log('Rendering tree', tree)
   // clear old list from dom
-  while (listEl.firstChild)
-    listEl.removeChild(listEl.lastChild)
+  while (listsContainer.firstChild)
+    listsContainer.removeChild(listsContainer.lastChild)
 
+  let treeIndex = 0 // refers to the list group number.. i.e. vertical column
   let queue = tree.children.slice(0)
   while (queue.length) {
-    let node = queue.shift()
+    let node = queue.pop()
     if (nodeHasChildren(node))
-      queue = queue.concat(node.children)
+      queue = [...node.children, ...queue]
 
-    let parentEl = node.parent ? document.getElementById('listchild-sub-' + node.parent): listEl
+    let parentEl
+    if (!node.parent) {
+      // no parent, lets make a new column
+      listsContainer.innerHTML += `<ul id="list-group-${treeIndex}" class="tree-list col"></ul>`
+      parentEl = document.getElementById(`list-group-${treeIndex}`)
+      treeIndex++
+    } else {
+      // theres a parent, we will attach it there
+      parentEl = document.getElementById('listchild-sub-' + node.parent)
+    }
     
     let childEl = document.createElement('li')
     childEl.id = 'listchild-' + node.name

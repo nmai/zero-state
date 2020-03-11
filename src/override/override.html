@@ -7,17 +7,17 @@
 </head>
 <body>
 
-	<div class="">
+	<div class="row">
 
-		<div class="row">
-			<!-- left side -->
-			<div class="col-md-9">
-				<!-- list -->
-				<ul id="list-group" class="tree-list"></ul>
-			</div>
+		<!-- main content - left side -->
+		<div id="lists-container" class="row row-main">
+			<!-- lists -->
+			<ul id="list-group" class="tree-list col"></ul>
+		</div>
 
-			<!-- right side -->
-			<div class="col-md-3">
+		<!-- right side panel -->
+		<div class="row row-side-panel">
+			<div class="col">
 				<!-- toggle button to open menu -->
 				<a id="toggle-form-btn" href="#">[+]</a>
 				<!-- add links -->
@@ -31,7 +31,6 @@
 					<input type="submit" value="Add">
 				</form>
 			</div>
-
 		</div>
 
 	</div>

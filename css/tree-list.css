@@ -41,7 +41,8 @@
 }
 .tree-list .tree-item:first-child:before {
   top: -10px;
-  height: calc(50% + 10px);
+  /* height: calc(50% + 10px); */
+  height: 25px;
 }
 .tree-list .tree-item:first-child:not(:last-child):before {
   top: -10px;

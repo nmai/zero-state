@@ -73,6 +73,22 @@ a {
   display: flex;
 }
 
+.row-main {
+  flex-grow: 1;
+}
+
+.row-side-panel {
+  flex-grow: 0;
+}
+
+.col {
+  float: left;
+  position: relative;
+  min-height: 1px;
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
 .col-md-9 {
   width: 75%;
   float: left;
