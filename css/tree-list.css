@@ -55,6 +55,9 @@
   padding: 0 5px;
   border: 1px solid #d1d5da;
 }
+.tree-list .tree-item > span:hover {
+  background-color: lightgray;
+}
 .tree-list .tree-item > .tree-list {
   padding-top: 10px;
 }

@@ -233,7 +233,7 @@ function extractFaviconUrl(urlStr) {
   // for now we will just make some guesses
   let faviconPath = 'favicon.ico'
   let faviconOrigin = url.origin
-  switch (url.host) {
+  switch (url.hostname) {
     case 'zoom.us':
       faviconPath = 'zoom.ico'
     break
@@ -247,6 +247,10 @@ function extractFaviconUrl(urlStr) {
     case 'www.atlassian.com':
       faviconOrigin = 'https://wac-cdn.atlassian.com'
       faviconPath = 'assets/img/favicons/atlassian/favicon.png'
+    break
+    case 'localhost':
+      faviconOrigin = ''
+      faviconPath = 'misc/favicon.ico'
     break
   }
   return `${faviconOrigin}/${faviconPath}`
@@ -277,13 +281,14 @@ function validParent(str) {
 }
 
 function validURL(str) {
-  var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+  let pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
     '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
     '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
     '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
     '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
     '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
-  return !!pattern.test(str);
+  // bypass this for localhost urls as it is PITA
+  return Boolean(str.includes('localhost') ? true : pattern.test(str));
 }
 
 function nodeHasChildren(node) {
