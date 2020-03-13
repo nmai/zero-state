@@ -230,6 +230,7 @@ function renderTree(tree) {
     parentEl.appendChild(childEl)
     childEl.addEventListener('contextmenu', event => {
       event.preventDefault()
+      event.stopImmediatePropagation();
       node.taskComplete = !node.taskComplete;
       save(rawList);
     })
