@@ -217,6 +217,8 @@ function renderTree(tree) {
     let contentNode = node.url
       ? htmlToElement(`<span><a href="${node.url}"><img src="${extractFaviconUrl(node.url)}" class="favicon">${node.name}</a></span>`)
       : htmlToElement(`<span>${node.name}</span>`)
+    if (node.taskComplete)
+      contentNode.classList.add('text-linethrough')
     childEl.appendChild(contentNode)
     if (formOpen && !nodeHasChildren(node)) {
       let delEl = htmlToElement(`<a href="#">[\u2212]</a>`)
@@ -226,6 +228,11 @@ function renderTree(tree) {
       childEl.appendChild(delEl)
     }
     parentEl.appendChild(childEl)
+    childEl.addEventListener('contextmenu', event => {
+      event.preventDefault()
+      node.taskComplete = !node.taskComplete;
+      save(rawList);
+    })
 
     if (nodeHasChildren(node)) {
       let subEl = document.createElement('ul')
@@ -291,14 +298,7 @@ function validParent(str) {
 }
 
 function validURL(str) {
-  let pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
-    '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
-    '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
-    '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
-  // bypass this for localhost urls as it is PITA
-  return Boolean(str.includes('localhost') ? true : pattern.test(str));
+  return /^https?:\/\//.test(str);
 }
 
 function nodeHasChildren(node) {

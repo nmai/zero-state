@@ -53,6 +53,9 @@ a {
 .text-child a {
   color: #0366d6;
 }
+.text-linethrough {
+  text-decoration: line-through;
+}
 
 .favicon {
   max-height: 18px;
@@ -87,6 +90,7 @@ a {
   min-height: 1px;
   padding-right: 15px;
   padding-left: 15px;
+  max-width: 400px;
 }
 
 .col-md-9 {
