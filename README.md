@@ -30,6 +30,14 @@ Replaces the default New Tab page in Chromium browsers (Chrome + Edge 2020)
 ![screenshot](misc/screenshot2.png)
 
 
+### todo
+- light/dark mode toggle
+- revisit the right-click "mark as completed" action - it's dead simple and no extra UI but not always intuitive and overrides the default right click context menu
+- revisit edit mode toggle behavior.. the Create form auto-hiding after adding something can be annoying when trying to add multiple items
+- inline edit for editing nodes in-place rather than deleting+recreating them
+- inline edit for adding children to nodes rather than having to type the parent name exactly in the create form
+- reconsider a delete confirmation button.. I don't really like confirmations but i have deleted things accidentally before and caused me great pain
+  + maybe not a confirmation, but an undo button? everyone prefers this UX but it is a bit harder to implement
 
 
 "inspiration" for design:
