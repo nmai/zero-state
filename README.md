@@ -11,10 +11,13 @@ Replaces the default New Tab page in Chromium browsers (Chrome + Edge 2020)
 - Safe - there are lots of New Tab pages on the Chrome web store but almost all of them are collecting data, sliding referral links into your cookies. redirecting your searches through their proxies, and/or something else behind the scenes. If it's free and actively developed and cutely marketed and not open source you should really be suspicious. Ads and scams are pretty much the only available monetization path for chrome extensions so it's not really their fault 🙂
 
 ### Install:
+Update: extension has been submitted to web store for review as of May 16, 2020.
+Until then, needs to be installed manually under developer mode.
 - chrome://extensions
 - Developer Mode: Enable
 - Load unpacked... navigate to this folder... done.
 - You can right click on menu item icon and Hide it, it's not necessary.
+- Note: Every time Chrome boots up it will ask about if you still want to keep developer mode on and that this extension is using developer mode. It is annoying but you just need to confirm every time. Problem will be solved once it is published.
 
 ### How to use:
 - First time you load a new page it will probably look like it didn't work, as it's completely empty. Look at the top right and see the button.
