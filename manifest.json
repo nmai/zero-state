@@ -1,13 +1,16 @@
 {
-  "name": "LAND O LINKS",
+  "name": "zero state",
   "version": "0.0.1",
   "manifest_version": 2,
-  "description": "New Tab page for lazies with too many links",
+  "description": "Zero State 《Chromium Extension》- Loosely organize links and notes on your New Tab page",
   "homepage_url": "https://github.com/nmai/land-o-links",
   "icons": {
     "16": "icons/icon16.png",
+    "19": "icons/icon19.png",
     "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "128": "icons/icon128.png",
+    "256": "icons/icon256.png",
+    "512": "icons/icon512.png"
   },
   "default_locale": "en",
   "chrome_url_overrides": {
