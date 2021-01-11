@@ -20,6 +20,8 @@ let nameField = document.getElementById('newlink-name')
 let urlField = document.getElementById('newlink-url')
 let parentField = document.getElementById('newlink-parent')
 let listsContainer = document.getElementById('lists-container')
+let overlayContainer = document.getElementById('overlay-container')
+
 
 let formOpen = false;
 // pre-processed
@@ -35,7 +37,7 @@ let createdTable = {}
 
 // initialization
 
-chrome.storage.sync.get(CURRENT_LIST_VERSION, result => {
+chrome.storage.sync.get(CURRENT_LIST_VERSION, function (result) {
   console.log('Fetched initial list:', result)
   if (result[CURRENT_LIST_VERSION] == null) {
     save([])
@@ -48,6 +50,7 @@ chrome.storage.sync.get(CURRENT_LIST_VERSION, result => {
 
   let tree = makeTree(rawList)
   renderTree(tree)
+  renderWelcome(rawList.length == 0)
 })
 
 // listeners 
@@ -103,6 +106,7 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         // plus to get flat maps of parent names and such, we would have to traverse anyway
         let tree = makeTree(list)
         renderTree(tree)
+        renderWelcome(rawList.length == 0)
       break
       default:
         // nothing really to do here, it's an old version of this list. maybe we do "auto migration"
@@ -304,4 +308,21 @@ function validURL(str) {
 
 function nodeHasChildren(node) {
   return Boolean(node.children && node.children.length > 0)
+}
+
+function renderWelcome(shouldRender) {
+  removeWelcome()
+  if (shouldRender){
+    let x = document.createElement("div")
+    x.className = "welcome-message"
+    x.innerText = "This is Zero State. To add your first node, click the [+] button in the top right corner"
+    overlayContainer.appendChild(x)
+  }
+}
+
+function removeWelcome() {
+  let children = document.getElementsByClassName("welcome-message")
+  if (children.length > 0) {
+    overlayContainer.removeChild(children[0])
+  }
 }
