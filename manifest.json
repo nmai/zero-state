@@ -1,7 +1,7 @@
 {
   "name": "zero state",
-  "version": "0.0.2",
-  "manifest_version": 2,
+  "version": "0.0.3",
+  "manifest_version": 3,
   "description": "Zero State 《Chromium Extension》- Loosely organize links and notes on your New Tab page",
   "homepage_url": "https://github.com/nmai/land-o-links",
   "icons": {
