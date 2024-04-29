@@ -1,13 +1,21 @@
+:root {
+  color-scheme: light dark;
+}
+
 body {
+  /* background-color: Canvas; */
+  /* color: CanvasText; */
+  color: light-dark(#24292e, #bdc1c6);
+  background-color: light-dark(white, #101010);
   font-size: 14px;
-  color: #24292e;
   margin-left: 0;
   margin-right: 0;
 }
-
 a {
   text-decoration: none;
-  color: #0366d6;
+}
+a:link, a:visited {
+  color: light-dark(#0366d6,#4D99FA);
 }
 
 #toggle-form-btn {
@@ -38,20 +46,13 @@ a {
 /* No idea what I'm doing but I want links to be a bit darker if they are a parent node */
 .text-parent {
   font-size: 16px;
-  color: #24292e;
   font-weight: 600;
-}
-.text-parent a {
-  color: #004ca2;
 }
 /* Looks like I have to reset the value for child links because it all inherits */
 .text-child {
-  color: initial;
+  /* color: initial; */
   font-weight: initial;
   font-size: 14px;
-}
-.text-child a {
-  color: #0366d6;
 }
 .text-linethrough {
   text-decoration: line-through;

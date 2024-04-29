@@ -219,7 +219,7 @@ function renderTree(tree) {
     childEl.id = 'listchild-' + node.name
     childEl.className = nodeHasChildren(node) ? `tree-item text-parent` : `tree-item text-child`
     let contentNode = node.url
-      ? htmlToElement(`<span><a href="${node.url}"><img src="${extractFaviconUrl(node.url)}" class="favicon">${node.name}</a></span>`)
+      ? htmlToElement(`<span><a href="${node.url}"><span><img src="${extractFaviconUrl(node.url)}" class="favicon"></span>${node.name}</a></span>`)
       : htmlToElement(`<span>${node.name}</span>`)
     if (node.taskComplete)
       contentNode.classList.add('text-linethrough')
