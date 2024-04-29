@@ -207,8 +207,8 @@ function renderTree(tree) {
     let parentEl
     if (!node.parent) {
       // no parent, lets make a new column
-      listsContainer.innerHTML += `<ul id="list-group-${treeIndex}" class="tree-list col"></ul>`
-      parentEl = document.getElementById(`list-group-${treeIndex}`)
+      parentEl = htmlToElement(`<ul id="list-group-${treeIndex}" class="tree-list col"></ul>`);
+      listsContainer.appendChild(parentEl);
       treeIndex++
     } else {
       // theres a parent, we will attach it there
