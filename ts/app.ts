@@ -53,56 +53,6 @@ const ICONS = {
   </svg>`
 };
 
-// Add styles for the button layout
-document.addEventListener('DOMContentLoaded', () => {
-  document.head.appendChild(
-    Object.assign(document.createElement('style'), {
-      textContent: `
-        .${DOM_CLASSES.BUTTON_GROUP} {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          margin-bottom: 16px;
-        }
-        
-        #toggle-form-btn, #settings-btn {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          width: 28px;
-          height: 28px;
-          background-color: transparent;
-          border-radius: 4px;
-          text-decoration: none;
-          color: #4285f4;
-          transition: color 0.2s, transform 0.1s;
-        }
-        
-        #toggle-form-btn:hover, #settings-btn:hover {
-          color: #1a73e8;
-          transform: translateY(-1px);
-        }
-        
-        #toggle-form-btn:active, #settings-btn:active {
-          transform: translateY(0);
-        }
-        
-        /* Adjust for dark mode if enabled */
-        [data-theme="dark"] #toggle-form-btn, 
-        [data-theme="dark"] #settings-btn {
-          background-color: transparent;
-          color: #8ab4f8;
-        }
-        
-        [data-theme="dark"] #toggle-form-btn:hover,
-        [data-theme="dark"] #settings-btn:hover {
-          color: #aecbfa;
-        }
-      `
-    })
-  );
-});
-
 // State
 class AppState {
   editMode = van.state(false);
@@ -922,19 +872,23 @@ async function initializeApp(): Promise<void> {
 function applyTheme(theme: 'light' | 'dark' | 'system'): void {
   const html = document.documentElement;
   
+  // Remove any explicit theme class first
+  html.classList.remove('theme-light', 'theme-dark');
+  
   if (theme === 'system') {
-    // Use system preference with media query
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    html.dataset.theme = prefersDark ? 'dark' : 'light';
+    // Let the browser handle system preferences automatically
+    // This will work with the light-dark() CSS function
+    html.style.colorScheme = 'light dark';
     
-    // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (state.settings.val.theme === 'system') {
-        html.dataset.theme = e.matches ? 'dark' : 'light';
-      }
-    });
+    // Remove data-theme attribute to let system preferences take over
+    if (html.hasAttribute('data-theme')) {
+      html.removeAttribute('data-theme');
+    }
   } else {
     // Set explicit theme
+    html.style.colorScheme = theme;
+    // Add theme class for any legacy styling
+    html.classList.add(`theme-${theme}`);
     html.dataset.theme = theme;
   }
 }
