@@ -43,44 +43,61 @@ class AppState {
     children: []
   });
   createdTable = van.state<Record<string, LinkNode>>({});
+  
+  // Cache of name to index for O(1) lookups
+  private nameToIndexMap: Map<string, number> = new Map();
 
   updateNames(): void {
     this.names.val = this.rawList.val.map(item => item.name);
+    
+    // Update the name to index map for fast lookups
+    this.nameToIndexMap.clear();
+    this.rawList.val.forEach((item, index) => {
+      this.nameToIndexMap.set(item.name, index);
+    });
   }
 
   addItem(item: LinkNodeFlat): void {
     this.rawList.val = [...this.rawList.val, item];
-    this.updateNames();
+    this.nameToIndexMap.set(item.name, this.rawList.val.length - 1);
+    this.names.val = [...this.names.val, item.name];
   }
 
   removeItem(item: LinkNodeFlat): void {
-    const index = this.rawList.val.findIndex(i => i.name === item.name);
-    if (index !== -1) {
+    const index = this.nameToIndexMap.get(item.name);
+    
+    if (index !== undefined) {
       const newList = [...this.rawList.val];
       newList.splice(index, 1);
       this.rawList.val = newList;
-      this.updateNames();
+      this.updateNames(); // Need to rebuild the map since indices change
     }
   }
 
   toggleTaskComplete(node: LinkNodeFlat): void {
-    const newList = [...this.rawList.val];
-    const foundItem = newList.find(item => item.name === node.name);
-    if (foundItem) {
-      foundItem.taskComplete = !foundItem.taskComplete;
+    const index = this.nameToIndexMap.get(node.name);
+    
+    if (index !== undefined) {
+      // Create a new array and only clone the specific element we need to modify
+      const newList = [...this.rawList.val];
+      newList[index] = { ...newList[index], taskComplete: !newList[index].taskComplete };
       this.rawList.val = newList;
     }
   }
 
   swapNodePositions(node1: LinkNodeFlat, node2: LinkNodeFlat): void {
-    const newList = [...this.rawList.val];
-    const index1 = newList.findIndex(item => item.name === node1.name);
-    const index2 = newList.findIndex(item => item.name === node2.name);
+    const index1 = this.nameToIndexMap.get(node1.name);
+    const index2 = this.nameToIndexMap.get(node2.name);
     
-    if (index1 !== -1 && index2 !== -1) {
+    if (index1 !== undefined && index2 !== undefined) {
       // Swap the items
+      const newList = [...this.rawList.val];
       [newList[index1], newList[index2]] = [newList[index2], newList[index1]];
       this.rawList.val = newList;
+      
+      // Update the index map for the swapped items
+      this.nameToIndexMap.set(node1.name, index2);
+      this.nameToIndexMap.set(node2.name, index1);
     }
   }
 }
@@ -89,12 +106,22 @@ const state = new AppState();
 
 // Storage Service
 class StorageService {
+  // Cache for the last saved list to avoid unnecessary storage operations
+  private static lastSavedListJson: string = '';
+
   static save(list: LinkNodeFlat[]): Promise<void> {
     // Clone to break references and clean
     const cloneList = JSON.parse(JSON.stringify(list)) as LinkNodeFlat[];
     
     // Remove any transient properties
     cloneList.forEach((n: any) => delete n.children);
+
+    // Check if the list has actually changed to avoid unnecessary storage operations
+    const listJson = JSON.stringify(cloneList);
+    if (this.lastSavedListJson === listJson) {
+      console.log('No changes, skipping save operation');
+      return Promise.resolve(); // No changes, skip save operation
+    }
 
     return new Promise((resolve, reject) => {
       chrome.storage.sync.set({ [CURRENT_LIST_VERSION]: cloneList }, () => {
@@ -103,6 +130,7 @@ class StorageService {
           reject(chrome.runtime.lastError);
         } else {
           console.log('Data saved successfully');
+          this.lastSavedListJson = listJson;
           resolve();
         }
       });
@@ -116,8 +144,10 @@ class StorageService {
           console.error('Error loading data:', chrome.runtime.lastError);
           reject(chrome.runtime.lastError);
         } else {
-          console.log('Fetched data:', result);
           const data = result[CURRENT_LIST_VERSION] as LinkNodeFlat[] | undefined;
+          if (data) {
+            this.lastSavedListJson = JSON.stringify(data);
+          }
           resolve(data || []);
         }
       });
@@ -154,58 +184,58 @@ class ValidatorService {
 
 // Tree Service
 class TreeService {
+  // Cache the last built tree to avoid unnecessary rebuilds
+  private static lastRawListJson: string = '';
+  private static cachedTree: LinkNode | null = null;
+
   static buildTree(rawList: LinkNodeFlat[]): LinkNode {
+    // Check if we already have a cached result for this exact list
+    const currentJson = JSON.stringify(rawList);
+    if (this.cachedTree && this.lastRawListJson === currentJson) {
+      return this.cachedTree;
+    }
+    
     const root: LinkNode = {
       name: 'Root',
       children: []
     };
     
-    const createdTable: Record<string, LinkNode> = {};
-    const nonrootList: LinkNodeFlat[] = [];
+    // Create a map for O(1) lookups
+    const nodeMap: Record<string, LinkNode> = { 'Root': root };
     
-    // First pass: Add root level items
+    // First pass: Create all nodes without connecting them
     for (const item of rawList) {
-      if (!item.parent) {
-        const node = { ...item } as LinkNode;
-        root.children!.push(node);
-        createdTable[node.name] = node;
-      } else {
-        nonrootList.push({ ...item });
-      }
+      nodeMap[item.name] = { ...item } as LinkNode;
     }
     
-    // Second pass: Process items with parents
-    let safetyCount = 0;
-    const MAX_ITERATIONS = 1000; // Safety limit to prevent infinite loops
-    
-    while (nonrootList.length > 0 && safetyCount < MAX_ITERATIONS) {
-      const remainingItems: LinkNodeFlat[] = [];
+    // Second pass: Connect nodes to their parents
+    for (const item of rawList) {
+      const node = nodeMap[item.name];
       
-      for (const item of nonrootList) {
-        const parent = createdTable[item.parent!];
+      if (item.parent) {
+        const parentNode = nodeMap[item.parent];
         
-        if (parent) {
-          const node = { ...item } as LinkNode;
-          parent.children = parent.children || [];
-          parent.children.push(node);
-          createdTable[node.name] = node;
+        if (parentNode) {
+          parentNode.children = parentNode.children || [];
+          parentNode.children.push(node);
         } else {
-          remainingItems.push(item);
+          // If parent doesn't exist, add to root
+          console.warn(`Parent "${item.parent}" not found for "${item.name}", adding to root`);
+          root.children!.push(node);
         }
+      } else {
+        // Add root-level items directly to root
+        root.children!.push(node);
       }
-      
-      // If we couldn't process any items in this iteration, break to avoid infinite loop
-      if (remainingItems.length === nonrootList.length) {
-        console.error('Unable to process remaining items due to missing parents:', remainingItems);
-        break;
-      }
-      
-      nonrootList.length = 0;
-      nonrootList.push(...remainingItems);
-      safetyCount++;
     }
     
-    state.createdTable.val = createdTable;
+    // Cache the result for future use
+    this.lastRawListJson = currentJson;
+    this.cachedTree = root;
+    
+    // Update the createdTable state (used elsewhere in the app)
+    state.createdTable.val = nodeMap;
+    
     return root;
   }
 
@@ -216,38 +246,26 @@ class TreeService {
 
 // UI Components using VanJS
 class UiComponents {
+  // Cache for favicon URLs to avoid redundant URL parsing
+  private static faviconCache: Map<string, string> = new Map();
+  
   static getFaviconUrl(urlStr: string): string {
+    // Return from cache if available
+    if (this.faviconCache.has(urlStr)) {
+      return this.faviconCache.get(urlStr)!;
+    }
+    
     try {
       const url = new URL(urlStr);
-      let faviconPath = 'favicon.ico';
-      let faviconOrigin = url.origin;
-      
-      // Custom favicon handling for specific sites
-      switch (url.hostname) {
-        case 'zoom.us':
-          faviconPath = 'zoom.ico';
-          break;
-        case 'calendar.google.com':
-          faviconPath = 'googlecalendar/images/favicon_v2014_3.ico';
-          break;
-        case 'www.figma.com':
-          faviconOrigin = 'https://static.figma.com';
-          faviconPath = 'app/icon/1/icon-128.png';
-          break;
-        case 'www.atlassian.com':
-          faviconOrigin = 'https://wac-cdn.atlassian.com';
-          faviconPath = 'assets/img/favicons/atlassian/favicon.png';
-          break;
-        case 'localhost':
-          faviconOrigin = '';
-          faviconPath = 'misc/favicon.ico';
-          break;
-      }
-      
-      return `${faviconOrigin}/${faviconPath}`;
+      // Use DuckDuckGo's favicon service instead of hardcoded URLs
+      const result = `https://icons.duckduckgo.com/ip2/${url.hostname}.ico`;
+      this.faviconCache.set(urlStr, result);
+      return result;
     } catch (error) {
       console.error('Invalid URL for favicon:', urlStr, error);
-      return 'misc/favicon.ico'; // Fallback to default favicon
+      const fallback = 'misc/favicon.ico';
+      this.faviconCache.set(urlStr, fallback);
+      return fallback; // Fallback to default favicon
     }
   }
 
@@ -369,6 +387,7 @@ class UiComponents {
       class: nodeClass,
       oncontextmenu: (e: Event) => {
         e.preventDefault();
+        e.stopImmediatePropagation();
         state.toggleTaskComplete(node);
         StorageService.save(state.rawList.val)
           .catch(error => {
@@ -507,19 +526,21 @@ class UiComponents {
     const shouldShow = state.rawList.val.length === 0;
     const overlayContainer = document.getElementById('overlay-container');
     
-    // Clear existing welcome message
-    if (overlayContainer) {
-      while (overlayContainer.firstChild) {
-        overlayContainer.removeChild(overlayContainer.lastChild!);
-      }
-      
-      // Add welcome message if needed
-      if (shouldShow) {
-        const welcomeMessage = div({ class: DOM_CLASSES.WELCOME_MESSAGE },
-          "This is Zero State. To add your first node, click the [+] button in the top right corner"
-        );
-        van.add(overlayContainer, welcomeMessage);
-      }
+    if (!overlayContainer) return;
+    
+    // Only update DOM if there's a change needed
+    const hasWelcomeMessage = overlayContainer.querySelector(`.${DOM_CLASSES.WELCOME_MESSAGE}`);
+    
+    if (shouldShow && !hasWelcomeMessage) {
+      // Clear container and add welcome message
+      overlayContainer.innerHTML = '';
+      const welcomeMessage = div({ class: DOM_CLASSES.WELCOME_MESSAGE },
+        "This is Zero State. To add your first node, click the [+] button in the top right corner"
+      );
+      van.add(overlayContainer, welcomeMessage);
+    } else if (!shouldShow && hasWelcomeMessage) {
+      // Just clear the welcome message
+      overlayContainer.innerHTML = '';
     }
   }
 
@@ -541,20 +562,20 @@ class UiComponents {
 // Initialize application
 async function initializeApp(): Promise<void> {
   try {
+    // Initialize state with stored data
     const storedList = await StorageService.load();
     state.rawList.val = storedList;
     state.updateNames();
     
+    // Build tree only once
     state.root.val = TreeService.buildTree(state.rawList.val);
     UiComponents.renderWelcomeMessage();
     
     // Render main app components to replace existing containers
     const mainContainer = document.querySelector('.row');
     if (mainContainer) {
-      // Clear existing content
-      while (mainContainer.firstChild) {
-        mainContainer.removeChild(mainContainer.lastChild!);
-      }
+      // Use innerHTML for faster initial DOM clearing
+      mainContainer.innerHTML = '';
       
       // Add new VanJS-rendered content - using van.add which automatically 
       // binds reactive functions and state objects
@@ -562,14 +583,24 @@ async function initializeApp(): Promise<void> {
       van.add(mainContainer, UiComponents.renderSidePanel());
     }
     
-    // Listen for storage changes
+    // Listen for storage changes - throttled to avoid excessive processing
+    let debounceTimer: number | null = null;
     chrome.storage.onChanged.addListener((changes, namespace: string) => {
       if (namespace === 'sync' && changes[CURRENT_LIST_VERSION]) {
-        const list = changes[CURRENT_LIST_VERSION].newValue as LinkNodeFlat[] || [];
-        state.rawList.val = list;
-        state.updateNames();
-        state.root.val = TreeService.buildTree(list);
-        UiComponents.renderWelcomeMessage();
+        // Clear any pending updates
+        if (debounceTimer !== null) {
+          clearTimeout(debounceTimer);
+        }
+        
+        // Debounce updates to avoid processing multiple changes in quick succession
+        debounceTimer = setTimeout(() => {
+          const list = changes[CURRENT_LIST_VERSION].newValue as LinkNodeFlat[] || [];
+          state.rawList.val = list;
+          state.updateNames();
+          state.root.val = TreeService.buildTree(list);
+          UiComponents.renderWelcomeMessage();
+          debounceTimer = null;
+        }, 50) as unknown as number;
       }
     });
     
