@@ -1,27 +1,25 @@
-# Zero State - New Tab replacement for Chromium browsers
+# Zero State
 
-Add links and notes to your New Tab page. Organize them as a single list, a tree, or multiple lists/trees.
+**Transform your New Tab page into a blank space for links and notes.**
 
-Replaces the default New Tab page in Chromium browsers (Chrome + Edge)
+## Why Zero State?
 
-## Features:
-- Ultralight - Vanilla JS + CSS, no third party libraries or bundles
-- Synchronizes - if you are signed into Chrome on multiple devices, changes propagate instantly to all using the [Chrome Storage API](https://developer.chrome.com/docs/extensions/reference/api/storage)
-- Safe - respects your privacy. No trackers, no uploading data to 3rd party servers. Data sync is managed entirely by your browser.
-- Unopinionated - you organize your stuff however you see fit. Doesn't try to force todo list format or a calendar view or agenda. It's just trees.
+- **Ultralight** - Pure vanilla JS/CSS with zero dependencies
+- **Private** - No tracking or third-party servers; all data stays in your browser
+- **Syncs Automatically** - Changes instantly appear across all your devices via Chrome Storage API
+- **Flexible Organization** - Arrange content as lists, trees, or both based on your workflow
 
-### How to use:
-- First time you load a new page it will probably look like it didn't work, as it's completely empty. Look at the top right and see the button.
-- Click the [+] icon to add a new node
-- Type a name (Required), must be unique.
-- URL not required, if none it will just be a black node, useful as a simple text note.
-- Parent: not required, but if you want to add an item as a child of another node (i.e. add it to a folder), type the exact name of the target
-- To delete things, open the Add form again ([+] icon) and some sort of delete button will appear next to leaf nodes. Leafs are any items with no children. If you want to delete a folder delete the children first.
-- To mark something as done without deleting it yet, you can right click on the node and it a strikethrough effect will be applied.
+## Getting Started
 
-### Early screenshot
+1. **Add items** with the [+] button in the top right
+2. **Create nodes** with a unique name (URLs optional)
+3. **Build hierarchies** by specifying parent nodes
+4. **Mark as complete** with right-click for strikethrough effect
+5. **Remove items** using the delete button (appears next to leaf nodes when in add mode)
+
 ![screenshot](misc/screenshot2.png)
 
+*Zero State respects your workflow - no forced formats, just the organization system you need.*
 
 Design inspiration:
 - https://codepen.io/mofies/pen/xJmpwZ
