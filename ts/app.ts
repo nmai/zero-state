@@ -1,6 +1,6 @@
 import type { Van } from "../static/lib/van-1.5.3.js"
 declare const van: Van
-const { div, a, form, label, input, span, ul, li, br, img } = van.tags
+const { div, a, form, label, input, span, ul, li, br, img, h2, h3, p } = van.tags
 
 // Types and Interfaces
 interface LinkNodeFlat {
@@ -14,8 +14,15 @@ interface LinkNode extends LinkNodeFlat {
   children?: LinkNode[];
 }
 
+interface Settings {
+  showFavicons: boolean;
+  enableRightClickComplete: boolean;
+  theme: 'light' | 'dark' | 'system';
+}
+
 // Constants
 const CURRENT_LIST_VERSION = 'links-v1';
+const SETTINGS_VERSION = 'settings-v1';
 const DOM_CLASSES = {
   DISPLAY_NONE: 'display-none',
   TREE_LIST: 'tree-list',
@@ -24,6 +31,8 @@ const DOM_CLASSES = {
   TEXT_CHILD: 'text-child',
   TEXT_LINETHROUGH: 'text-linethrough',
   WELCOME_MESSAGE: 'welcome-message',
+  SETTINGS_PAGE: 'settings-page',
+  BUTTON_GROUP: 'button-group'
 };
 
 const ICONS = {
@@ -31,11 +40,73 @@ const ICONS = {
   PLUS: '[+]',
   UP: '↑',
   DOWN: '↓',
+  EDIT: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+  </svg>`,
+  CLOSE: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>`,
+  SETTINGS: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+  </svg>`
 };
+
+// Add styles for the button layout
+document.addEventListener('DOMContentLoaded', () => {
+  document.head.appendChild(
+    Object.assign(document.createElement('style'), {
+      textContent: `
+        .${DOM_CLASSES.BUTTON_GROUP} {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+        
+        #toggle-form-btn, #settings-btn {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 28px;
+          height: 28px;
+          background-color: transparent;
+          border-radius: 4px;
+          text-decoration: none;
+          color: #4285f4;
+          transition: color 0.2s, transform 0.1s;
+        }
+        
+        #toggle-form-btn:hover, #settings-btn:hover {
+          color: #1a73e8;
+          transform: translateY(-1px);
+        }
+        
+        #toggle-form-btn:active, #settings-btn:active {
+          transform: translateY(0);
+        }
+        
+        /* Adjust for dark mode if enabled */
+        [data-theme="dark"] #toggle-form-btn, 
+        [data-theme="dark"] #settings-btn {
+          background-color: transparent;
+          color: #8ab4f8;
+        }
+        
+        [data-theme="dark"] #toggle-form-btn:hover,
+        [data-theme="dark"] #settings-btn:hover {
+          color: #aecbfa;
+        }
+      `
+    })
+  );
+});
 
 // State
 class AppState {
   editMode = van.state(false);
+  settingsMode = van.state(false);
   rawList = van.state<LinkNodeFlat[]>([]);
   names = van.state<string[]>([]);
   root = van.state<LinkNode>({
@@ -43,6 +114,11 @@ class AppState {
     children: []
   });
   createdTable = van.state<Record<string, LinkNode>>({});
+  settings = van.state<Settings>({
+    showFavicons: true,
+    enableRightClickComplete: false,
+    theme: 'system'
+  });
   
   // Cache of name to index for O(1) lookups
   private nameToIndexMap: Map<string, number> = new Map();
@@ -108,6 +184,7 @@ const state = new AppState();
 class StorageService {
   // Cache for the last saved list to avoid unnecessary storage operations
   private static lastSavedListJson: string = '';
+  private static lastSavedSettingsJson: string = '';
 
   static save(list: LinkNodeFlat[]): Promise<void> {
     // Clone to break references and clean
@@ -149,6 +226,56 @@ class StorageService {
             this.lastSavedListJson = JSON.stringify(data);
           }
           resolve(data || []);
+        }
+      });
+    });
+  }
+
+  static saveSettings(settings: Settings): Promise<void> {
+    // Check if the settings have actually changed to avoid unnecessary storage operations
+    const settingsJson = JSON.stringify(settings);
+    if (this.lastSavedSettingsJson === settingsJson) {
+      console.log('No changes to settings, skipping save operation');
+      return Promise.resolve(); // No changes, skip save operation
+    }
+
+    return new Promise((resolve, reject) => {
+      chrome.storage.sync.set({ [SETTINGS_VERSION]: settings }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('Error saving settings:', chrome.runtime.lastError);
+          reject(chrome.runtime.lastError);
+        } else {
+          console.log('Settings saved successfully');
+          this.lastSavedSettingsJson = settingsJson;
+          resolve();
+        }
+      });
+    });
+  }
+
+  static loadSettings(): Promise<Settings> {
+    return new Promise((resolve, reject) => {
+      chrome.storage.sync.get(SETTINGS_VERSION, (result) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error loading settings:', chrome.runtime.lastError);
+          reject(chrome.runtime.lastError);
+        } else {
+          const data = result[SETTINGS_VERSION] as Settings | undefined;
+          
+          const defaultSettings: Settings = {
+            showFavicons: true,
+            enableRightClickComplete: false,
+            theme: 'system'
+          };
+          
+          // Merge with default settings to ensure all properties exist
+          const mergedSettings = data ? { ...defaultSettings, ...data } : defaultSettings;
+          
+          if (mergedSettings) {
+            this.lastSavedSettingsJson = JSON.stringify(mergedSettings);
+          }
+          
+          resolve(mergedSettings);
         }
       });
     });
@@ -340,8 +467,10 @@ class UiComponents {
     if (node.url) {
       return span({ class: contentClasses.join(' ') }, 
         a({ href: node.url }, 
-          // Only show favicon if not in edit mode
-          () => state.editMode.val ? null : span({}, img({ src: this.getFaviconUrl(node.url || ''), class: "favicon" })),
+          // Only show favicon if enabled in settings and not in edit mode
+          () => state.editMode.val || !state.settings.val.showFavicons ? 
+                null : 
+                span({}, img({ src: this.getFaviconUrl(node.url || ''), class: "favicon" })),
           node.name
         )
       );
@@ -382,10 +511,15 @@ class UiComponents {
       children.push(this.renderChildList(node.children));
     }
 
-    return li({ 
-      id: 'listchild-' + node.name, 
-      class: nodeClass,
-      oncontextmenu: (e: Event) => {
+    // Create list item with conditional right-click handler
+    const liProps: Record<string, any> = {
+      id: 'listchild-' + node.name,
+      class: nodeClass
+    };
+    
+    // Only add the right-click handler if the feature is enabled in settings
+    if (state.settings.val.enableRightClickComplete) {
+      liProps.oncontextmenu = (e: Event) => {
         e.preventDefault();
         e.stopImmediatePropagation();
         state.toggleTaskComplete(node);
@@ -395,8 +529,10 @@ class UiComponents {
             state.toggleTaskComplete(node); // Revert on failure
             alert('Failed to update task status. Please try again.');
           });
-      }
-    }, ...children);
+      };
+    }
+
+    return li(liProps, ...children);
   }
 
   static renderChildList(children: LinkNode[]) {
@@ -517,8 +653,151 @@ class UiComponents {
       onclick: (e: Event) => {
         e.preventDefault();
         state.editMode.val = !state.editMode.val;
+        // Close settings mode if open
+        if (state.settingsMode.val) {
+          state.settingsMode.val = false;
+        }
+      },
+      innerHTML: () => state.editMode.val ? ICONS.CLOSE : ICONS.EDIT
+    });
+  }
+
+  static renderSettingsButton() {
+    return a({ 
+      id: "settings-btn", 
+      href: "#",
+      onclick: (e: Event) => {
+        e.preventDefault();
+        state.settingsMode.val = !state.settingsMode.val;
+        // Close edit mode if open
+        if (state.editMode.val) {
+          state.editMode.val = false;
+        }
+      },
+      innerHTML: ICONS.SETTINGS
+    });
+  }
+
+  static renderSettingsPage() {
+    const updateSetting = (key: keyof Settings, value: any) => {
+      const newSettings = { ...state.settings.val, [key]: value };
+      state.settings.val = newSettings;
+      
+      // Apply theme immediately if it changes
+      if (key === 'theme') {
+        applyTheme(value);
       }
-    }, () => state.editMode.val ? ICONS.MINUS : ICONS.PLUS);
+      
+      // Save settings to storage
+      StorageService.saveSettings(newSettings)
+        .catch(error => {
+          console.error('Failed to save settings:', error);
+          alert('Failed to save settings. Please try again.');
+        });
+    };
+
+    // Create the settings form
+    return div({ class: DOM_CLASSES.SETTINGS_PAGE }, 
+      div({ class: "settings-header" }, 
+        h2({}, "Settings"),
+        a({ 
+          href: "#", 
+          class: "close-settings-btn",
+          onclick: (e: Event) => {
+            e.preventDefault();
+            state.settingsMode.val = false;
+          },
+          innerHTML: ICONS.CLOSE
+        })
+      ),
+      
+      // Favicon Setting
+      div({ class: "settings-group" },
+        h3({}, "Favicons"),
+        div({ class: "setting-item" },
+          label({ for: "favicon-toggle" },
+            input({
+              type: "checkbox",
+              id: "favicon-toggle",
+              checked: state.settings.val.showFavicons,
+              onchange: (e: Event) => {
+                updateSetting('showFavicons', (e.target as HTMLInputElement).checked);
+              }
+            }),
+            "Show Favicons"
+          ),
+          p({ class: "setting-description" }, 
+            "When enabled, favicons are fetched from DuckDuckGo's icon service."
+          )
+        )
+      ),
+      
+      // Right-click Complete Setting
+      div({ class: "settings-group" },
+        h3({}, "Task Completion"),
+        div({ class: "setting-item" },
+          label({ for: "right-click-toggle" },
+            input({
+              type: "checkbox",
+              id: "right-click-toggle",
+              checked: state.settings.val.enableRightClickComplete,
+              onchange: (e: Event) => {
+                updateSetting('enableRightClickComplete', (e.target as HTMLInputElement).checked);
+              }
+            }),
+            "Enable Right-click to Mark as Done"
+          ),
+          p({ class: "setting-description" }, 
+            "When enabled, right-clicking on an item will toggle its completion status."
+          )
+        )
+      ),
+      
+      // Theme Setting
+      div({ class: "settings-group" },
+        h3({}, "Theme"),
+        div({ class: "setting-item" },
+          div({ class: "radio-group" },
+            label({ for: "theme-light" },
+              input({
+                type: "radio",
+                id: "theme-light",
+                name: "theme",
+                value: "light",
+                checked: state.settings.val.theme === 'light',
+                onchange: () => updateSetting('theme', 'light')
+              }),
+              "Light"
+            ),
+            label({ for: "theme-dark" },
+              input({
+                type: "radio",
+                id: "theme-dark",
+                name: "theme",
+                value: "dark",
+                checked: state.settings.val.theme === 'dark',
+                onchange: () => updateSetting('theme', 'dark')
+              }),
+              "Dark"
+            ),
+            label({ for: "theme-system" },
+              input({
+                type: "radio",
+                id: "theme-system",
+                name: "theme",
+                value: "system",
+                checked: state.settings.val.theme === 'system',
+                onchange: () => updateSetting('theme', 'system')
+              }),
+              "System (Default)"
+            )
+          ),
+          p({ class: "setting-description" }, 
+            "Choose your preferred theme or use your system's setting."
+          )
+        )
+      )
+    );
   }
 
   static renderWelcomeMessage() {
@@ -535,7 +814,7 @@ class UiComponents {
       // Clear container and add welcome message
       overlayContainer.innerHTML = '';
       const welcomeMessage = div({ class: DOM_CLASSES.WELCOME_MESSAGE },
-        "This is Zero State. To add your first node, click the [+] button in the top right corner"
+        "This is Zero State. To add your first node, click the edit icon in the top right corner"
       );
       van.add(overlayContainer, welcomeMessage);
     } else if (!shouldShow && hasWelcomeMessage) {
@@ -547,7 +826,10 @@ class UiComponents {
   static renderSidePanel() {
     return div({ class: "row row-side-panel" },
       div({ class: "col" },
-        this.renderToggleButton(),
+        div({ class: DOM_CLASSES.BUTTON_GROUP },
+          this.renderToggleButton(),
+          this.renderSettingsButton()
+        ),
         this.renderAddForm()
       )
     );
@@ -555,7 +837,13 @@ class UiComponents {
 
   static renderMainContent() {
     // Use van state to create a reactive binding to the root state
-    return () => this.renderTree();
+    return () => {
+      if (state.settingsMode.val) {
+        return this.renderSettingsPage();
+      } else {
+        return this.renderTree();
+      }
+    };
   }
 }
 
@@ -563,9 +851,17 @@ class UiComponents {
 async function initializeApp(): Promise<void> {
   try {
     // Initialize state with stored data
-    const storedList = await StorageService.load();
+    const [storedList, storedSettings] = await Promise.all([
+      StorageService.load(),
+      StorageService.loadSettings()
+    ]);
+    
     state.rawList.val = storedList;
     state.updateNames();
+    state.settings.val = storedSettings;
+    
+    // Apply theme based on settings
+    applyTheme(storedSettings.theme);
     
     // Build tree only once
     state.root.val = TreeService.buildTree(state.rawList.val);
@@ -586,7 +882,7 @@ async function initializeApp(): Promise<void> {
     // Listen for storage changes - throttled to avoid excessive processing
     let debounceTimer: number | null = null;
     chrome.storage.onChanged.addListener((changes, namespace: string) => {
-      if (namespace === 'sync' && changes[CURRENT_LIST_VERSION]) {
+      if (namespace === 'sync') {
         // Clear any pending updates
         if (debounceTimer !== null) {
           clearTimeout(debounceTimer);
@@ -594,11 +890,22 @@ async function initializeApp(): Promise<void> {
         
         // Debounce updates to avoid processing multiple changes in quick succession
         debounceTimer = setTimeout(() => {
-          const list = changes[CURRENT_LIST_VERSION].newValue as LinkNodeFlat[] || [];
-          state.rawList.val = list;
-          state.updateNames();
-          state.root.val = TreeService.buildTree(list);
-          UiComponents.renderWelcomeMessage();
+          // Handle link list changes
+          if (changes[CURRENT_LIST_VERSION]) {
+            const list = changes[CURRENT_LIST_VERSION].newValue as LinkNodeFlat[] || [];
+            state.rawList.val = list;
+            state.updateNames();
+            state.root.val = TreeService.buildTree(list);
+            UiComponents.renderWelcomeMessage();
+          }
+          
+          // Handle settings changes
+          if (changes[SETTINGS_VERSION]) {
+            const newSettings = changes[SETTINGS_VERSION].newValue as Settings;
+            state.settings.val = newSettings;
+            applyTheme(newSettings.theme);
+          }
+          
           debounceTimer = null;
         }, 50) as unknown as number;
       }
@@ -608,6 +915,27 @@ async function initializeApp(): Promise<void> {
   } catch (error) {
     console.error('Failed to initialize application:', error);
     alert('Failed to load data. Please refresh the page to try again.');
+  }
+}
+
+// Helper function to apply theme
+function applyTheme(theme: 'light' | 'dark' | 'system'): void {
+  const html = document.documentElement;
+  
+  if (theme === 'system') {
+    // Use system preference with media query
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    html.dataset.theme = prefersDark ? 'dark' : 'light';
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (state.settings.val.theme === 'system') {
+        html.dataset.theme = e.matches ? 'dark' : 'light';
+      }
+    });
+  } else {
+    // Set explicit theme
+    html.dataset.theme = theme;
   }
 }
 

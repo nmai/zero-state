@@ -156,3 +156,7 @@ a:link, a:visited {
 .move-down {
   margin-top: 0;
 }
+
+.settings-page {
+  flex-grow: 1;
+}
