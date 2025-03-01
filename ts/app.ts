@@ -810,10 +810,6 @@ class UiComponents {
           state.editMode.val = !state.editMode.val;
           if (state.settingsMode.val) state.settingsMode.val = false;
           break;
-          
-        case 'about':
-          alert('Zero State\nA browser extension to organize your links and tasks efficiently.');
-          break;
       }
     };
     
@@ -821,18 +817,11 @@ class UiComponents {
       a({ 
         href: "#", 
         onclick: (e) => handleLinkClick(e, 'new')
-      }, "New Item"),
-      div({ class: "space-20" }),
+      }, "[+]"),
       a({ 
         href: "#", 
         onclick: (e) => handleLinkClick(e, 'settings')
-      }, "Settings"),
-      div({ class: "space-20" }),
-      a({ 
-        href: "#", 
-        onclick: (e) => handleLinkClick(e, 'about')
-      }, "About"),
-      div({ class: "space-40" })
+      }, "[settings]"),
     );
   }
   
