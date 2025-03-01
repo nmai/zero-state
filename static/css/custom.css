@@ -1,25 +1,32 @@
+/* ===== THEME VARIABLES ===== */
 :root {
   color-scheme: light dark;
   
-  /* Define CSS variables for consistent theming */
-  --primary-button-color: #4285f4;
-  --primary-button-hover-color: #1a73e8;
+  /* Base colors */
   --background-color: white;
   --text-color: #24292e;
   --link-color: #0366d6;
+  
+  /* UI elements */
+  --primary-button-color: #4285f4;
+  --primary-button-hover-color: #1a73e8;
   --border-color: #d1d5da;
   --secondary-bg-color: #f6f8fa;
   --hover-bg-color: #e1e4e8;
   --footer-link-color: rgba(0,0,0,.5);
 }
 
+/* Dark mode variables */
 @media (prefers-color-scheme: dark) {
   :root {
-    --primary-button-color: #8ab4f8;
-    --primary-button-hover-color: #aecbfa;
+    /* Base colors */
     --background-color: #101010;
     --text-color: #bdc1c6;
     --link-color: #4D99FA;
+    
+    /* UI elements */
+    --primary-button-color: #8ab4f8;
+    --primary-button-hover-color: #aecbfa;
     --border-color: #313438;
     --secondary-bg-color: #202124;
     --hover-bg-color: #303134;
@@ -27,13 +34,16 @@
   }
 }
 
-/* Support for explicit theme setting */
+/* Explicit theme classes */
 .theme-light {
-  --primary-button-color: #4285f4;
-  --primary-button-hover-color: #1a73e8;
+  /* Base colors */
   --background-color: white;
   --text-color: #24292e;
   --link-color: #0366d6;
+  
+  /* UI elements */
+  --primary-button-color: #4285f4;
+  --primary-button-hover-color: #1a73e8;
   --border-color: #d1d5da;
   --secondary-bg-color: #f6f8fa;
   --hover-bg-color: #e1e4e8;
@@ -41,34 +51,72 @@
 }
 
 .theme-dark {
-  --primary-button-color: #8ab4f8;
-  --primary-button-hover-color: #aecbfa;
+  /* Base colors */
   --background-color: #101010;
   --text-color: #bdc1c6;
   --link-color: #4D99FA;
+  
+  /* UI elements */
+  --primary-button-color: #8ab4f8;
+  --primary-button-hover-color: #aecbfa;
   --border-color: #313438;
   --secondary-bg-color: #202124;
   --hover-bg-color: #303134;
   --footer-link-color: rgba(255,255,255,.5);
 }
 
+/* ===== BASE STYLES ===== */
 body {
-  /* background-color: Canvas; */
-  /* color: CanvasText; */
   color: var(--text-color);
   background-color: var(--background-color);
   font-size: 14px;
   margin-left: 0;
   margin-right: 0;
 }
+
 a {
   text-decoration: none;
-}
-a:link, a:visited {
   color: var(--link-color);
 }
 
-/* Button Group and Icon Button Styles */
+/* ===== LAYOUT COMPONENTS ===== */
+.container {
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+.row {
+  display: flex;
+}
+
+.row-main {
+  flex-grow: 1;
+}
+
+.row-side-panel {
+  flex-grow: 0;
+}
+
+.col, .col-md-3, .col-md-9 {
+  float: left;
+  position: relative;
+  min-height: 1px;
+  padding: 0 15px;
+}
+
+.col {
+  max-width: 400px;
+}
+
+.col-md-3 {
+  width: 25%;
+}
+
+.col-md-9 {
+  width: 75%;
+}
+
+/* ===== BUTTON COMPONENTS ===== */
 .button-group {
   display: flex;
   flex-direction: column;
@@ -89,6 +137,10 @@ a:link, a:visited {
   transition: color 0.2s, transform 0.1s;
 }
 
+#toggle-form-btn {
+  float: right;
+}
+
 #toggle-form-btn:hover, #settings-btn:hover {
   color: var(--primary-button-hover-color);
   transform: translateY(-1px);
@@ -98,114 +150,7 @@ a:link, a:visited {
   transform: translateY(0);
 }
 
-#toggle-form-btn {
-  float: right;
-}
-
-#footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  height: 20px;
-  font-size: 12px;
-}
-#footer a {
-  color: var(--footer-link-color);
-}
-.space-20 {
-  width: 20px;
-}
-.space-40 {
-  width: 40px;
-}
-
-/* No idea what I'm doing but I want links to be a bit darker if they are a parent node */
-.text-parent {
-  font-size: 16px;
-  font-weight: 600;
-}
-/* Looks like I have to reset the value for child links because it all inherits */
-.text-child {
-  /* color: initial; */
-  font-weight: initial;
-  font-size: 14px;
-}
-.text-linethrough {
-  text-decoration: line-through;
-}
-
-.favicon {
-  max-height: 18px;
-  float: left;
-  padding: 5px;
-}
-
-.display-none {
-  display: none;
-}
-
-.container {
-  margin: 0 auto;
-  max-width: 800px;
-}
-
-.row {
-  display: flex;
-}
-
-.row-main {
-  flex-grow: 1;
-}
-
-.row-side-panel {
-  flex-grow: 0;
-}
-
-.col {
-  float: left;
-  position: relative;
-  min-height: 1px;
-  padding-right: 15px;
-  padding-left: 15px;
-  max-width: 400px;
-}
-
-.col-md-9 {
-  width: 75%;
-  float: left;
-  position: relative;
-  min-height: 1px;
-  padding-right: 15px;
-  padding-left: 15px;
-}
-
-.col-md-3 {
-  width: 25%;
-  float: left;
-  position: relative;
-  min-height: 1px;
-  padding-right: 15px;
-  padding-left: 15px;
-}
-
-#overlay-container {
-  position: absolute;
-  width: 100%;
-}
-
-.welcome-message {
-  width: 400px;
-  text-align: center;
-  margin-left: auto;
-  margin-right: auto;
-  padding-top: 10%;
-  font-size: 20px;
-}
-
+/* Move buttons */
 .move-controls {
   display: inline-block;
   margin-right: 5px;
@@ -237,6 +182,74 @@ a:link, a:visited {
   margin-top: 0;
 }
 
+/* ===== TEXT STYLING ===== */
+.text-parent {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.text-child {
+  font-weight: normal;
+  font-size: 14px;
+}
+
+.text-linethrough {
+  text-decoration: line-through;
+}
+
+/* ===== COMPONENT SPECIFIC STYLES ===== */
+/* Favicon */
+.favicon {
+  max-height: 18px;
+  float: left;
+  padding: 5px;
+}
+
+/* Welcome message */
+#overlay-container {
+  position: absolute;
+  width: 100%;
+}
+
+.welcome-message {
+  width: 400px;
+  text-align: center;
+  margin: 0 auto;
+  padding-top: 10%;
+  font-size: 20px;
+}
+
+/* Settings page */
 .settings-page {
   flex-grow: 1;
+}
+
+/* Footer */
+#footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 20px;
+  font-size: 12px;
+}
+
+#footer a {
+  color: var(--footer-link-color);
+}
+
+/* ===== UTILITY CLASSES ===== */
+.display-none {
+  display: none;
+}
+
+.space-20 {
+  width: 20px;
+}
+
+.space-40 {
+  width: 40px;
 }
