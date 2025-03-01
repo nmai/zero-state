@@ -64,6 +64,7 @@ class AppState {
     children: []
   });
   createdTable = van.state<Record<string, LinkNode>>({});
+  editingNode = van.state<LinkNodeFlat | null>(null);
   settings = van.state<Settings>({
     showFavicons: true,
     enableRightClickComplete: false,
@@ -124,6 +125,22 @@ class AppState {
       // Update the index map for the swapped items
       this.nameToIndexMap.set(node1.name, index2);
       this.nameToIndexMap.set(node2.name, index1);
+    }
+  }
+
+  updateItem(originalName: string, updatedItem: LinkNodeFlat): void {
+    const index = this.nameToIndexMap.get(originalName);
+    
+    if (index !== undefined) {
+      // Create a new array with the updated item
+      const newList = [...this.rawList.val];
+      newList[index] = updatedItem;
+      this.rawList.val = newList;
+      
+      // Update name mappings if the name changed
+      if (originalName !== updatedItem.name) {
+        this.updateNames(); // Rebuild the name index map
+      }
     }
   }
 }
@@ -410,13 +427,53 @@ class UiComponents {
     }, ICONS.DOWN);
   }
 
+  static createEditButton(node: LinkNodeFlat) {
+    return a({ 
+      href: "#", 
+      class: "edit-node-btn",
+      title: "Edit",
+      innerHTML: ICONS.EDIT,
+      onclick: (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Set the editing node in state
+        state.editingNode.val = node;
+        
+        // Make sure edit mode is enabled
+        if (!state.editMode.val) {
+          state.editMode.val = true;
+        }
+        
+        // The form will be populated based on this state in renderAddForm
+      }
+    });
+  }
+
   static renderNodeContent(node: LinkNode) {
     const contentClasses = [];
     if (node.taskComplete) contentClasses.push(DOM_CLASSES.TEXT_LINETHROUGH);
+    
+    // Add editable class when in edit mode
+    if (state.editMode.val) contentClasses.push('editable-node');
+
+    const handleNodeClick = (e: Event) => {
+      // Only handle clicks when in edit mode
+      if (state.editMode.val) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Set the editing node in state
+        state.editingNode.val = node;
+      }
+    };
 
     if (node.url) {
       return span({ class: contentClasses.join(' ') }, 
-        a({ href: node.url }, 
+        a({ 
+          href: node.url, 
+          onclick: handleNodeClick
+        }, 
           // Only show favicon if enabled in settings and not in edit mode
           () => state.editMode.val || !state.settings.val.showFavicons ? 
                 null : 
@@ -425,7 +482,11 @@ class UiComponents {
         )
       );
     } else {
-      return span({ class: contentClasses.join(' ') }, node.name);
+      return span({ 
+        class: contentClasses.join(' '), 
+        onclick: handleNodeClick,
+        style: state.editMode.val ? "cursor: pointer;" : ""
+      }, node.name);
     }
   }
 
@@ -518,6 +579,27 @@ class UiComponents {
     const nameField = van.state('');
     const urlField = van.state('');
     const parentField = van.state('');
+    
+    // Set up to track if we're in edit mode
+    const isEditing = () => state.editingNode.val !== null;
+    const originalName = van.state('');
+    
+    // Effect to populate the form when editing node changes
+    van.derive(() => {
+      const editNode = state.editingNode.val;
+      if (editNode) {
+        nameField.val = editNode.name;
+        urlField.val = editNode.url || '';
+        parentField.val = editNode.parent || '';
+        originalName.val = editNode.name;
+      } else {
+        // Clear the form when not editing
+        nameField.val = '';
+        urlField.val = '';
+        parentField.val = '';
+        originalName.val = '';
+      }
+    });
 
     const handleSubmit = (e: Event) => {
       e.preventDefault();
@@ -525,35 +607,67 @@ class UiComponents {
       const name = nameField.val.trim();
       const url = urlField.val.trim();
       const parent = parentField.val.trim();
-
-      const errorMessage = ValidatorService.validateNewItem(name, url, parent, state.names.val);
+      
+      // Validation - slightly different for edit vs add
+      let errorMessage: string | null = null;
+      
+      if (name.length === 0) {
+        errorMessage = 'Name must be populated';
+      } else if (!isEditing() && state.names.val.includes(name)) {
+        errorMessage = 'Name already taken';
+      } else if (isEditing() && name !== originalName.val && state.names.val.includes(name)) {
+        errorMessage = 'Name already taken';
+      } else if (url.length > 0 && !ValidatorService.isValidUrl(url)) {
+        errorMessage = 'URL format invalid';
+      } else if (parent.length > 0 && !state.names.val.includes(parent)) {
+        errorMessage = 'Parent does not exist';
+      }
       
       if (errorMessage) {
         alert(errorMessage);
         return;
       }
-
-      const newItem: LinkNodeFlat = {
+      
+      // Build the item object with updated values
+      const item: LinkNodeFlat = {
         name: name,
         url: url || undefined,
         parent: parent || undefined,
       };
       
-      state.addItem(newItem);
+      // If editing an existing node, preserve its task status
+      if (isEditing() && state.editingNode.val?.taskComplete) {
+        item.taskComplete = state.editingNode.val.taskComplete;
+      }
       
+      // Either update or add the item
+      if (isEditing()) {
+        state.updateItem(originalName.val, item);
+      } else {
+        state.addItem(item);
+      }
+      
+      // Save to storage
       StorageService.save(state.rawList.val)
         .then(() => {
+          // Reset state
           state.editMode.val = false;
+          state.editingNode.val = null;
           nameField.val = '';
           urlField.val = '';
           parentField.val = '';
+          originalName.val = '';
+          
+          // Update tree and welcome message
           state.root.val = TreeService.buildTree(state.rawList.val);
           this.renderWelcomeMessage();
         })
         .catch(error => {
-          console.error('Failed to save new item:', error);
-          state.removeItem(newItem); // Revert on failure
-          alert('Failed to save new item. Please try again.');
+          console.error('Failed to save item:', error);
+          if (!isEditing()) {
+            state.removeItem(item); // Revert on failure for new items
+          }
+          alert('Failed to save. Please try again.');
         });
     };
 
@@ -562,6 +676,10 @@ class UiComponents {
       class: () => state.editMode.val ? "" : DOM_CLASSES.DISPLAY_NONE,
       onsubmit: handleSubmit
     }, 
+      div({ class: "form-header" }, 
+        () => isEditing() ? "Edit Item" : "Add New Item"
+      ),
+      
       label({ for: "newlink-name" }, "Name:"), br(),
       input({ 
         type: "text", 
@@ -592,7 +710,31 @@ class UiComponents {
         oninput: (e: Event) => parentField.val = (e.target as HTMLInputElement).value 
       }), br(),
       
-      input({ type: "submit", value: "Add" })
+      div({ class: "form-actions" },
+        input({ 
+          type: "submit", 
+          value: () => isEditing() ? "Update" : "Add" 
+        }),
+        
+        // Show cancel button when editing
+        () => isEditing() ? 
+          input({ 
+            type: "button", 
+            value: "Cancel", 
+            onclick: () => {
+              state.editingNode.val = null;
+              nameField.val = '';
+              urlField.val = '';
+              parentField.val = '';
+              originalName.val = '';
+            }
+          }) : null
+      ),
+      
+      // Add form hint text
+      div({ class: "form-hint" },
+        "Click on any highlighted item to edit it."
+      )
     );
   }
 
@@ -602,7 +744,14 @@ class UiComponents {
       href: "#",
       onclick: (e: Event) => {
         e.preventDefault();
-        state.editMode.val = !state.editMode.val;
+        const newEditMode = !state.editMode.val;
+        state.editMode.val = newEditMode;
+        
+        // If turning off edit mode, clear editing state
+        if (!newEditMode) {
+          state.editingNode.val = null;
+        }
+        
         // Close settings mode if open
         if (state.settingsMode.val) {
           state.settingsMode.val = false;
@@ -619,9 +768,11 @@ class UiComponents {
       onclick: (e: Event) => {
         e.preventDefault();
         state.settingsMode.val = !state.settingsMode.val;
+        
         // Close edit mode if open
         if (state.editMode.val) {
           state.editMode.val = false;
+          state.editingNode.val = null;
         }
       },
       innerHTML: ICONS.SETTINGS
