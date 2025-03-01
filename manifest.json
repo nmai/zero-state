@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "manifest_version": 3,
   "description": "Zero State: Organize links and notes on your New Tab page",
-  "homepage_url": "https://github.com/nmai/land-o-links",
+  "homepage_url": "https://github.com/nmai/zero-state",
   "icons": {
     "16": "static/icons/icon16.png",
     "19": "static/icons/icon19.png",
