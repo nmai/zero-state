@@ -29,6 +29,8 @@ const DOM_CLASSES = {
 const ICONS = {
   MINUS: '[\u2212]',
   PLUS: '[+]',
+  UP: '↑',
+  DOWN: '↓',
 };
 
 // State
@@ -66,6 +68,18 @@ class AppState {
     const foundItem = newList.find(item => item.name === node.name);
     if (foundItem) {
       foundItem.taskComplete = !foundItem.taskComplete;
+      this.rawList.val = newList;
+    }
+  }
+
+  swapNodePositions(node1: LinkNodeFlat, node2: LinkNodeFlat): void {
+    const newList = [...this.rawList.val];
+    const index1 = newList.findIndex(item => item.name === node1.name);
+    const index2 = newList.findIndex(item => item.name === node2.name);
+    
+    if (index1 !== -1 && index2 !== -1) {
+      // Swap the items
+      [newList[index1], newList[index2]] = [newList[index2], newList[index1]];
       this.rawList.val = newList;
     }
   }
@@ -253,6 +267,54 @@ class UiComponents {
     }}, ICONS.MINUS);
   }
 
+  static createMoveUpButton(node: LinkNode, siblings: LinkNode[], index: number) {
+    // Only show if not first child
+    if (index <= 0) return null;
+    
+    return a({ 
+      href: "#", 
+      class: "move-btn move-up",
+      onclick: (e: Event) => {
+        e.preventDefault();
+        const prevSibling = siblings[index - 1];
+        state.swapNodePositions(node, prevSibling);
+        StorageService.save(state.rawList.val)
+          .then(() => {
+            state.root.val = TreeService.buildTree(state.rawList.val);
+          })
+          .catch(error => {
+            console.error('Failed to save after position change:', error);
+            state.swapNodePositions(node, prevSibling); // Revert on failure
+            alert('Failed to move item up. Please try again.');
+          });
+      }
+    }, ICONS.UP);
+  }
+
+  static createMoveDownButton(node: LinkNode, siblings: LinkNode[], index: number) {
+    // Only show if not last child
+    if (index >= siblings.length - 1) return null;
+    
+    return a({ 
+      href: "#", 
+      class: "move-btn move-down",
+      onclick: (e: Event) => {
+        e.preventDefault();
+        const nextSibling = siblings[index + 1];
+        state.swapNodePositions(node, nextSibling);
+        StorageService.save(state.rawList.val)
+          .then(() => {
+            state.root.val = TreeService.buildTree(state.rawList.val);
+          })
+          .catch(error => {
+            console.error('Failed to save after position change:', error);
+            state.swapNodePositions(node, nextSibling); // Revert on failure
+            alert('Failed to move item down. Please try again.');
+          });
+      }
+    }, ICONS.DOWN);
+  }
+
   static renderNodeContent(node: LinkNode) {
     const contentClasses = [];
     if (node.taskComplete) contentClasses.push(DOM_CLASSES.TEXT_LINETHROUGH);
@@ -260,7 +322,8 @@ class UiComponents {
     if (node.url) {
       return span({ class: contentClasses.join(' ') }, 
         a({ href: node.url }, 
-          span({}, img({ src: this.getFaviconUrl(node.url), class: "favicon" })),
+          // Only show favicon if not in edit mode
+          () => state.editMode.val ? null : span({}, img({ src: this.getFaviconUrl(node.url || ''), class: "favicon" })),
           node.name
         )
       );
@@ -269,14 +332,27 @@ class UiComponents {
     }
   }
 
-  static renderNode(node: LinkNode) {
+  static renderNode(node: LinkNode, siblings?: LinkNode[], index?: number) {
     const nodeClass = TreeService.hasChildren(node) 
       ? `${DOM_CLASSES.TREE_ITEM} ${DOM_CLASSES.TEXT_PARENT}` 
       : `${DOM_CLASSES.TREE_ITEM} ${DOM_CLASSES.TEXT_CHILD}`;
 
-    const children: any[] = [
-      this.renderNodeContent(node)
-    ];
+    const children: any[] = [];
+    
+    // Add up/down buttons if in edit mode and node has siblings
+    if (state.editMode.val && siblings && siblings.length > 1) {
+      const moveControls = div({ class: "move-controls" });
+      const upButton = this.createMoveUpButton(node, siblings, index || 0);
+      const downButton = this.createMoveDownButton(node, siblings, index || 0);
+      
+      if (upButton) van.add(moveControls, upButton);
+      if (downButton) van.add(moveControls, downButton);
+      
+      children.push(moveControls);
+    }
+    
+    // Add the main node content
+    children.push(this.renderNodeContent(node));
 
     // Add delete button if form is open and node has no children
     if (state.editMode.val && !TreeService.hasChildren(node)) {
@@ -306,7 +382,7 @@ class UiComponents {
 
   static renderChildList(children: LinkNode[]) {
     return ul({ class: DOM_CLASSES.TREE_LIST }, 
-      ...children.map(child => this.renderNode(child))
+      ...children.map((child, index) => this.renderNode(child, children, index))
     );
   }
 
@@ -320,11 +396,12 @@ class UiComponents {
     let treeIndex = 0;
 
     for (const node of tree.children) {
+      const rootChildren = tree.children;
       listGroups.push(
         ul({ 
           id: `list-group-${treeIndex}`, 
           class: `${DOM_CLASSES.TREE_LIST} col` 
-        }, this.renderNode(node))
+        }, this.renderNode(node, rootChildren, treeIndex))
       );
       treeIndex++;
     }

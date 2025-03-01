@@ -125,3 +125,34 @@ a:link, a:visited {
   padding-top: 10%;
   font-size: 20px;
 }
+
+.move-controls {
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.move-btn {
+  display: block;
+  text-align: center;
+  width: 16px;
+  height: 16px;
+  line-height: 14px;
+  font-size: 12px;
+  margin: 1px 0;
+  border: 1px solid light-dark(#d1d5da, #313438);
+  border-radius: 2px;
+  background-color: light-dark(#f6f8fa, #202124);
+}
+
+.move-btn:hover {
+  background-color: light-dark(#e1e4e8, #303134);
+}
+
+.move-up {
+  margin-bottom: 0;
+}
+
+.move-down {
+  margin-top: 0;
+}
