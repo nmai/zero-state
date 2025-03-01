@@ -406,14 +406,27 @@ a {
   color: var(--primary-button-color);
 }
 
+/* Button group behavior in edit mode */
+.row-side-panel .button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.row-side-panel .button-group.hidden-in-edit-mode {
+  display: none;
+}
+
 /* Form styling */
 #newlink-form {
-  padding: 15px;
+  padding: 10px 15px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  background-color: var(--secondary-bg-color);
+  background-color: transparent;
   margin-bottom: 20px;
   animation: fadeInUp 0.3s ease-out;
+  max-width: 320px;
 }
 
 .form-header {
@@ -421,6 +434,27 @@ a {
   font-weight: 500;
   margin-bottom: 15px;
   color: var(--text-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.close-form-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--hover-bg-color);
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.close-form-btn:hover {
+  background-color: var(--border-color);
+  transform: translateY(-1px);
 }
 
 .form-actions {
@@ -431,12 +465,13 @@ a {
 
 #newlink-form input[type="text"] {
   width: 100%;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border: 1px solid var(--border-color);
   border-radius: 4px;
   margin-bottom: 10px;
   background-color: var(--background-color);
   color: var(--text-color);
+  box-sizing: border-box;
 }
 
 #newlink-form input[type="submit"],
@@ -449,12 +484,15 @@ a {
 }
 
 #newlink-form input[type="submit"] {
-  background-color: var(--primary-button-color);
-  color: white;
+  background-color: transparent;
+  color: var(--primary-button-color);
+  border: 1px solid var(--primary-button-color);
+  font-weight: 500;
 }
 
 #newlink-form input[type="submit"]:hover {
-  background-color: var(--primary-button-hover-color);
+  background-color: rgba(66, 133, 244, 0.1);
+  color: var(--primary-button-hover-color);
 }
 
 #newlink-form input[type="button"] {

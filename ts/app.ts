@@ -677,7 +677,17 @@ class UiComponents {
       onsubmit: handleSubmit
     }, 
       div({ class: "form-header" }, 
-        () => isEditing() ? "Edit Item" : "Add New Item"
+        () => isEditing() ? "Edit Item" : "Add New Item",
+        a({ 
+          href: "#", 
+          class: "close-form-btn",
+          onclick: (e: Event) => {
+            e.preventDefault();
+            state.editMode.val = false;
+            state.editingNode.val = null;
+          },
+          innerHTML: ICONS.CLOSE
+        })
       ),
       
       label({ for: "newlink-name" }, "Name:"), br(),
@@ -742,14 +752,12 @@ class UiComponents {
     return a({ 
       id: "toggle-form-btn", 
       href: "#",
+      class: () => state.editMode.val ? DOM_CLASSES.DISPLAY_NONE : "",
       onclick: (e: Event) => {
         e.preventDefault();
-        const newEditMode = !state.editMode.val;
-        state.editMode.val = newEditMode;
-        
-        // If turning off edit mode, clear editing state
-        if (!newEditMode) {
-          state.editingNode.val = null;
+        // Only enable edit mode, don't disable (that's now handled by the close button)
+        if (!state.editMode.val) {
+          state.editMode.val = true;
         }
         
         // Close settings mode if open
@@ -757,7 +765,7 @@ class UiComponents {
           state.settingsMode.val = false;
         }
       },
-      innerHTML: () => state.editMode.val ? ICONS.CLOSE : ICONS.EDIT
+      innerHTML: ICONS.EDIT
     });
   }
 
@@ -765,6 +773,7 @@ class UiComponents {
     return a({ 
       id: "settings-btn", 
       href: "#",
+      class: () => state.editMode.val ? DOM_CLASSES.DISPLAY_NONE : "",
       onclick: (e: Event) => {
         e.preventDefault();
         state.settingsMode.val = !state.settingsMode.val;
@@ -927,7 +936,9 @@ class UiComponents {
   static renderSidePanel() {
     return div({ class: "row row-side-panel" },
       div({ class: "col" },
-        div({ class: DOM_CLASSES.BUTTON_GROUP },
+        div({ 
+          class: () => `${DOM_CLASSES.BUTTON_GROUP} ${state.editMode.val ? 'hidden-in-edit-mode' : ''}` 
+        },
           this.renderToggleButton(),
           this.renderSettingsButton()
         ),
