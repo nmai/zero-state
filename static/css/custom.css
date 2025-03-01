@@ -233,12 +233,23 @@ a {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  height: 20px;
+  height: 30px;
   font-size: 12px;
+  padding: 0 15px;
+  background-color: var(--secondary-bg-color);
+  border-top: 1px solid var(--border-color);
+  z-index: 100;
 }
 
 #footer a {
   color: var(--footer-link-color);
+  transition: color 0.2s, transform 0.1s;
+  padding: 5px 0;
+}
+
+#footer a:hover {
+  color: var(--primary-button-color);
+  transform: translateY(-1px);
 }
 
 /* ===== UTILITY CLASSES ===== */

@@ -795,6 +795,65 @@ class UiComponents {
       }
     };
   }
+  
+  static renderFooter() {
+    const handleLinkClick = (e: Event, action: string) => {
+      e.preventDefault();
+      
+      switch (action) {
+        case 'settings':
+          state.settingsMode.val = !state.settingsMode.val;
+          if (state.editMode.val) state.editMode.val = false;
+          break;
+          
+        case 'new':
+          state.editMode.val = !state.editMode.val;
+          if (state.settingsMode.val) state.settingsMode.val = false;
+          break;
+          
+        case 'about':
+          alert('Zero State\nA browser extension to organize your links and tasks efficiently.');
+          break;
+      }
+    };
+    
+    return div({ id: "footer" },
+      a({ 
+        href: "#", 
+        onclick: (e) => handleLinkClick(e, 'new')
+      }, "New Item"),
+      div({ class: "space-20" }),
+      a({ 
+        href: "#", 
+        onclick: (e) => handleLinkClick(e, 'settings')
+      }, "Settings"),
+      div({ class: "space-20" }),
+      a({ 
+        href: "#", 
+        onclick: (e) => handleLinkClick(e, 'about')
+      }, "About"),
+      div({ class: "space-40" })
+    );
+  }
+  
+  static renderApp() {
+    return div({},
+      // Overlay container for welcome message
+      div({ id: "overlay-container" }),
+      
+      // Main row containing the content
+      div({ class: "row" }, 
+        // Main content area - will be populated by renderMainContent
+        UiComponents.renderMainContent(),
+        
+        // Side panel with buttons and form
+        UiComponents.renderSidePanel()
+      ),
+      
+      // Footer
+      UiComponents.renderFooter()
+    );
+  }
 }
 
 // Initialize application
@@ -815,19 +874,13 @@ async function initializeApp(): Promise<void> {
     
     // Build tree only once
     state.root.val = TreeService.buildTree(state.rawList.val);
-    UiComponents.renderWelcomeMessage();
     
-    // Render main app components to replace existing containers
-    const mainContainer = document.querySelector('.row');
-    if (mainContainer) {
-      // Use innerHTML for faster initial DOM clearing
-      mainContainer.innerHTML = '';
-      
-      // Add new VanJS-rendered content - using van.add which automatically 
-      // binds reactive functions and state objects
-      van.add(mainContainer, UiComponents.renderMainContent());
-      van.add(mainContainer, UiComponents.renderSidePanel());
-    }
+    // Render the entire application using VanJS
+    // This creates the complete DOM structure including overlay container, main content, and footer
+    van.add(document.body, UiComponents.renderApp());
+    
+    // Render welcome message if needed
+    UiComponents.renderWelcomeMessage();
     
     // Listen for storage changes - throttled to avoid excessive processing
     let debounceTimer: number | null = null;
