@@ -494,7 +494,7 @@ class UiComponents {
   static renderTree() {
     const tree = state.root.val;
     if (!tree.children || tree.children.length === 0) {
-      return div({ id: "lists-container", class: "row row-main" });
+      return div({ id: "lists-container", class: "row main-content" });
     }
 
     const listGroups: any[] = [];
@@ -511,7 +511,7 @@ class UiComponents {
       treeIndex++;
     }
 
-    return div({ id: "lists-container", class: "row row-main" }, ...listGroups);
+    return div({ id: "lists-container", class: "row main-content" }, ...listGroups);
   }
 
   static renderAddForm() {
