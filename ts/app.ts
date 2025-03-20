@@ -5,101 +5,9 @@ import { StorageService } from './storage.service';
 import { applyTheme } from './theme.service';
 import { LinkNode, LinkNodeFlat, Settings } from './types';
 import { add, state, derive, div, a, form, label, input, span, ul, li, br, img, h2, h3, p } from './van'
+import { ValidatorService } from './validator.service';
+import { TreeService } from './tree.service';
 
-
-// State
-const appState = new AppState();
-
-
-
-// Validator Service
-class ValidatorService {
-  static validateNewItem(name: string, url: string, parent: string, existingNames: string[]): string | null {
-    if (name.length === 0) {
-      return 'Name must be populated';
-    }
-    
-    if (existingNames.includes(name)) {
-      return 'Name already taken';
-    }
-    
-    if (url.length > 0 && !this.isValidUrl(url)) {
-      return 'URL format invalid';
-    }
-    
-    if (parent.length > 0 && !existingNames.includes(parent)) {
-      return 'Parent does not exist';
-    }
-    
-    return null;
-  }
-
-  static isValidUrl(url: string): boolean {
-    return /^https?:\/\//.test(url);
-  }
-}
-
-// Tree Service
-class TreeService {
-  // Cache the last built tree to avoid unnecessary rebuilds
-  private static lastRawListJson: string = '';
-  private static cachedTree: LinkNode | null = null;
-
-  static buildTree(rawList: LinkNodeFlat[]): LinkNode {
-    // Check if we already have a cached result for this exact list
-    const currentJson = JSON.stringify(rawList);
-    if (this.cachedTree && this.lastRawListJson === currentJson) {
-      return this.cachedTree;
-    }
-    
-    const root: LinkNode = {
-      name: 'Root',
-      children: []
-    };
-    
-    // Create a map for O(1) lookups
-    const nodeMap: Record<string, LinkNode> = { 'Root': root };
-    
-    // First pass: Create all nodes without connecting them
-    for (const item of rawList) {
-      nodeMap[item.name] = { ...item } as LinkNode;
-    }
-    
-    // Second pass: Connect nodes to their parents
-    for (const item of rawList) {
-      const node = nodeMap[item.name];
-      
-      if (item.parent) {
-        const parentNode = nodeMap[item.parent];
-        
-        if (parentNode) {
-          parentNode.children = parentNode.children || [];
-          parentNode.children.push(node);
-        } else {
-          // If parent doesn't exist, add to root
-          console.warn(`Parent "${item.parent}" not found for "${item.name}", adding to root`);
-          root.children!.push(node);
-        }
-      } else {
-        // Add root-level items directly to root
-        root.children!.push(node);
-      }
-    }
-    
-    // Cache the result for future use
-    this.lastRawListJson = currentJson;
-    this.cachedTree = root;
-    
-    // Update the createdTable state (used elsewhere in the app)
-    appState.createdTable.val = nodeMap;
-    
-    return root;
-  }
-
-  static hasChildren(node: LinkNode): boolean {
-    return Boolean(node.children && node.children.length > 0);
-  }
-}
 
 // UI Components using VanJS
 class UiComponents {
@@ -129,10 +37,10 @@ class UiComponents {
   static createDeleteButton(node: LinkNodeFlat) {
     return a({ href: "#", onclick: (e: Event) => {
       e.preventDefault();
-      appState.removeItem(node);
-      StorageService.save(appState.rawList.val)
+      AppState.removeItem(node);
+      StorageService.save(AppState.rawList.val)
         .then(() => {
-          appState.root.val = TreeService.buildTree(appState.rawList.val);
+          AppState.root.val = TreeService.buildTree(AppState.rawList.val);
           this.renderWelcomeMessage();
         })
         .catch(error => {
@@ -152,14 +60,14 @@ class UiComponents {
       onclick: (e: Event) => {
         e.preventDefault();
         const prevSibling = siblings[index - 1];
-        appState.swapNodePositions(node, prevSibling);
-        StorageService.save(appState.rawList.val)
+        AppState.swapNodePositions(node, prevSibling);
+        StorageService.save(AppState.rawList.val)
           .then(() => {
-            appState.root.val = TreeService.buildTree(appState.rawList.val);
+            AppState.root.val = TreeService.buildTree(AppState.rawList.val);
           })
           .catch(error => {
             console.error('Failed to save after position change:', error);
-            appState.swapNodePositions(node, prevSibling); // Revert on failure
+            AppState.swapNodePositions(node, prevSibling); // Revert on failure
             alert('Failed to move item up. Please try again.');
           });
       }
@@ -176,14 +84,14 @@ class UiComponents {
       onclick: (e: Event) => {
         e.preventDefault();
         const nextSibling = siblings[index + 1];
-        appState.swapNodePositions(node, nextSibling);
-        StorageService.save(appState.rawList.val)
+        AppState.swapNodePositions(node, nextSibling);
+        StorageService.save(AppState.rawList.val)
           .then(() => {
-            appState.root.val = TreeService.buildTree(appState.rawList.val);
+            AppState.root.val = TreeService.buildTree(AppState.rawList.val);
           })
           .catch(error => {
             console.error('Failed to save after position change:', error);
-            appState.swapNodePositions(node, nextSibling); // Revert on failure
+            AppState.swapNodePositions(node, nextSibling); // Revert on failure
             alert('Failed to move item down. Please try again.');
           });
       }
@@ -201,11 +109,11 @@ class UiComponents {
         e.stopPropagation();
         
         // Set the editing node in state
-        appState.editingNode.val = node;
+        AppState.editingNode.val = node;
         
         // Make sure edit mode is enabled
-        if (!appState.editMode.val) {
-          appState.editMode.val = true;
+        if (!AppState.editMode.val) {
+          AppState.editMode.val = true;
         }
         
         // The form will be populated based on this state in renderAddForm
@@ -218,16 +126,16 @@ class UiComponents {
     if (node.taskComplete) contentClasses.push(DOM_CLASSES.TEXT_LINETHROUGH);
     
     // Add editable class when in edit mode
-    if (appState.editMode.val) contentClasses.push('editable-node');
+    if (AppState.editMode.val) contentClasses.push('editable-node');
 
     const handleNodeClick = (e: Event) => {
       // Only handle clicks when in edit mode
-      if (appState.editMode.val) {
+      if (AppState.editMode.val) {
         e.preventDefault();
         e.stopPropagation();
         
         // Set the editing node in state
-        appState.editingNode.val = node;
+        AppState.editingNode.val = node;
       }
     };
 
@@ -238,7 +146,7 @@ class UiComponents {
           onclick: handleNodeClick
         }, 
           // Only show favicon if enabled in settings and not in edit mode
-          () => appState.editMode.val || !appState.settings.val.showFavicons ? 
+          () => AppState.editMode.val || !AppState.settings.val.showFavicons ? 
                 null : 
                 span({}, img({ src: this.getFaviconUrl(node.url || ''), class: "favicon" })),
           node.name
@@ -248,7 +156,7 @@ class UiComponents {
       return span({ 
         class: contentClasses.join(' '), 
         onclick: handleNodeClick,
-        style: appState.editMode.val ? "cursor: pointer;" : ""
+        style: AppState.editMode.val ? "cursor: pointer;" : ""
       }, node.name);
     }
   }
@@ -261,7 +169,7 @@ class UiComponents {
     const children: any[] = [];
     
     // Add up/down buttons if in edit mode and node has siblings
-    if (appState.editMode.val && siblings && siblings.length > 1) {
+    if (AppState.editMode.val && siblings && siblings.length > 1) {
       const moveControls = div({ class: "move-controls" });
       const upButton = this.createMoveUpButton(node, siblings, index || 0);
       const downButton = this.createMoveDownButton(node, siblings, index || 0);
@@ -276,7 +184,7 @@ class UiComponents {
     children.push(this.renderNodeContent(node));
 
     // Add delete button if form is open and node has no children
-    if (appState.editMode.val && !TreeService.hasChildren(node)) {
+    if (AppState.editMode.val && !TreeService.hasChildren(node)) {
       children.push(this.createDeleteButton(node));
     }
 
@@ -292,15 +200,15 @@ class UiComponents {
     };
     
     // Only add the right-click handler if the feature is enabled in settings
-    if (appState.settings.val.enableRightClickComplete) {
+    if (AppState.settings.val.enableRightClickComplete) {
       liProps.oncontextmenu = (e: Event) => {
         e.preventDefault();
         e.stopImmediatePropagation();
-        appState.toggleTaskComplete(node);
-        StorageService.save(appState.rawList.val)
+        AppState.toggleTaskComplete(node);
+        StorageService.save(AppState.rawList.val)
           .catch(error => {
             console.error('Failed to save task status:', error);
-            appState.toggleTaskComplete(node); // Revert on failure
+            AppState.toggleTaskComplete(node); // Revert on failure
             alert('Failed to update task status. Please try again.');
           });
       };
@@ -316,7 +224,7 @@ class UiComponents {
   }
 
   static renderTree() {
-    const tree = appState.root.val;
+    const tree = AppState.root.val;
     if (!tree.children || tree.children.length === 0) {
       return div({ id: "lists-container", class: "row main-content" });
     }
@@ -344,12 +252,12 @@ class UiComponents {
     const parentField = state('');
     
     // Set up to track if we're in edit mode
-    const isEditing = () => appState.editingNode.val !== null;
+    const isEditing = () => AppState.editingNode.val !== null;
     const originalName = state('');
     
     // Effect to populate the form when editing node changes
     derive(() => {
-      const editNode = appState.editingNode.val;
+      const editNode = AppState.editingNode.val;
       if (editNode) {
         nameField.val = editNode.name;
         urlField.val = editNode.url || '';
@@ -374,15 +282,16 @@ class UiComponents {
       // Validation - slightly different for edit vs add
       let errorMessage: string | null = null;
       
+      // TODO: Move to validatorservice
       if (name.length === 0) {
         errorMessage = 'Name must be populated';
-      } else if (!isEditing() && appState.names.val.includes(name)) {
+      } else if (!isEditing() && AppState.names.val.includes(name)) {
         errorMessage = 'Name already taken';
-      } else if (isEditing() && name !== originalName.val && appState.names.val.includes(name)) {
+      } else if (isEditing() && name !== originalName.val && AppState.names.val.includes(name)) {
         errorMessage = 'Name already taken';
       } else if (url.length > 0 && !ValidatorService.isValidUrl(url)) {
         errorMessage = 'URL format invalid';
-      } else if (parent.length > 0 && !appState.names.val.includes(parent)) {
+      } else if (parent.length > 0 && !AppState.names.val.includes(parent)) {
         errorMessage = 'Parent does not exist';
       }
       
@@ -399,36 +308,36 @@ class UiComponents {
       };
       
       // If editing an existing node, preserve its task status
-      if (isEditing() && appState.editingNode.val?.taskComplete) {
-        item.taskComplete = appState.editingNode.val.taskComplete;
+      if (isEditing() && AppState.editingNode.val?.taskComplete) {
+        item.taskComplete = AppState.editingNode.val.taskComplete;
       }
       
       // Either update or add the item
       if (isEditing()) {
-        appState.updateItem(originalName.val, item);
+        AppState.updateItem(originalName.val, item);
       } else {
-        appState.addItem(item);
+        AppState.addItem(item);
       }
       
       // Save to storage
-      StorageService.save(appState.rawList.val)
+      StorageService.save(AppState.rawList.val)
         .then(() => {
           // Reset state
-          appState.editMode.val = false;
-          appState.editingNode.val = null;
+          AppState.editMode.val = false;
+          AppState.editingNode.val = null;
           nameField.val = '';
           urlField.val = '';
           parentField.val = '';
           originalName.val = '';
           
           // Update tree and welcome message
-          appState.root.val = TreeService.buildTree(appState.rawList.val);
+          AppState.root.val = TreeService.buildTree(AppState.rawList.val);
           this.renderWelcomeMessage();
         })
         .catch(error => {
           console.error('Failed to save item:', error);
           if (!isEditing()) {
-            appState.removeItem(item); // Revert on failure for new items
+            AppState.removeItem(item); // Revert on failure for new items
           }
           alert('Failed to save. Please try again.');
         });
@@ -436,7 +345,7 @@ class UiComponents {
 
     return form({ 
       id: "newlink-form", 
-      class: () => appState.editMode.val ? "" : DOM_CLASSES.DISPLAY_NONE,
+      class: () => AppState.editMode.val ? "" : DOM_CLASSES.DISPLAY_NONE,
       onsubmit: handleSubmit
     }, 
       div({ class: "form-header" }, 
@@ -446,8 +355,8 @@ class UiComponents {
           class: "close-form-btn",
           onclick: (e: Event) => {
             e.preventDefault();
-            appState.editMode.val = false;
-            appState.editingNode.val = null;
+            AppState.editMode.val = false;
+            AppState.editingNode.val = null;
           },
           innerHTML: ICONS.CLOSE
         })
@@ -495,7 +404,7 @@ class UiComponents {
             type: "button", 
             value: "Cancel", 
             onclick: () => {
-              appState.editingNode.val = null;
+              AppState.editingNode.val = null;
               nameField.val = '';
               urlField.val = '';
               parentField.val = '';
@@ -515,17 +424,17 @@ class UiComponents {
     return a({ 
       id: "toggle-form-btn", 
       href: "#",
-      class: () => appState.editMode.val ? DOM_CLASSES.DISPLAY_NONE : "",
+      class: () => AppState.editMode.val ? DOM_CLASSES.DISPLAY_NONE : "",
       onclick: (e: Event) => {
         e.preventDefault();
         // Only enable edit mode, don't disable (that's now handled by the close button)
-        if (!appState.editMode.val) {
-          appState.editMode.val = true;
+        if (!AppState.editMode.val) {
+          AppState.editMode.val = true;
         }
         
         // Close settings mode if open
-        if (appState.settingsMode.val) {
-          appState.settingsMode.val = false;
+        if (AppState.settingsMode.val) {
+          AppState.settingsMode.val = false;
         }
       },
       innerHTML: ICONS.EDIT
@@ -536,15 +445,15 @@ class UiComponents {
     return a({ 
       id: "settings-btn", 
       href: "#",
-      class: () => appState.editMode.val ? DOM_CLASSES.DISPLAY_NONE : "",
+      class: () => AppState.editMode.val ? DOM_CLASSES.DISPLAY_NONE : "",
       onclick: (e: Event) => {
         e.preventDefault();
-        appState.settingsMode.val = !appState.settingsMode.val;
+        AppState.settingsMode.val = !AppState.settingsMode.val;
         
         // Close edit mode if open
-        if (appState.editMode.val) {
-          appState.editMode.val = false;
-          appState.editingNode.val = null;
+        if (AppState.editMode.val) {
+          AppState.editMode.val = false;
+          AppState.editingNode.val = null;
         }
       },
       innerHTML: ICONS.SETTINGS
@@ -553,7 +462,7 @@ class UiComponents {
 
   static renderWelcomeMessage() {
     // Check if welcome message should be shown
-    const shouldShow = appState.rawList.val.length === 0;
+    const shouldShow = AppState.rawList.val.length === 0;
     const overlayContainer = document.getElementById('overlay-container');
     
     if (!overlayContainer) return;
@@ -578,7 +487,7 @@ class UiComponents {
     return div({ class: "row row-side-panel" },
       div({ class: "col" },
         div({ 
-          class: () => `${DOM_CLASSES.BUTTON_GROUP} ${appState.editMode.val ? 'hidden-in-edit-mode' : ''}` 
+          class: () => `${DOM_CLASSES.BUTTON_GROUP} ${AppState.editMode.val ? 'hidden-in-edit-mode' : ''}` 
         },
           this.renderToggleButton(),
           this.renderSettingsButton()
@@ -591,8 +500,8 @@ class UiComponents {
   static renderMainContent() {
     // Use van state to create a reactive binding to the root state
     return () => {
-      if (appState.settingsMode.val) {
-        return new SettingsComponent(appState).renderSettingsPage();
+      if (AppState.settingsMode.val) {
+        return new SettingsComponent(AppState).renderSettingsPage();
       } else {
         return this.renderTree();
       }
@@ -605,13 +514,13 @@ class UiComponents {
       
       switch (action) {
         case 'settings':
-          appState.settingsMode.val = !appState.settingsMode.val;
-          if (appState.editMode.val) appState.editMode.val = false;
+          AppState.settingsMode.val = !AppState.settingsMode.val;
+          if (AppState.editMode.val) AppState.editMode.val = false;
           break;
           
         case 'new':
-          appState.editMode.val = !appState.editMode.val;
-          if (appState.settingsMode.val) appState.settingsMode.val = false;
+          AppState.editMode.val = !AppState.editMode.val;
+          if (AppState.settingsMode.val) AppState.settingsMode.val = false;
           break;
       }
     };
@@ -657,15 +566,15 @@ async function initializeApp(): Promise<void> {
       StorageService.loadSettings()
     ]);
     
-    appState.rawList.val = storedList;
-    appState.updateNames();
-    appState.settings.val = storedSettings;
+    AppState.rawList.val = storedList;
+    AppState.updateNames();
+    AppState.settings.val = storedSettings;
     
     // Apply theme based on settings
     applyTheme(storedSettings.theme);
     
     // Build tree only once
-    appState.root.val = TreeService.buildTree(appState.rawList.val);
+    AppState.root.val = TreeService.buildTree(AppState.rawList.val);
     
     // Render the entire application using VanJS
     // This creates the complete DOM structure including overlay container, main content, and footer
@@ -688,16 +597,16 @@ async function initializeApp(): Promise<void> {
           // Handle link list changes
           if (changes[CURRENT_LIST_VERSION]) {
             const list = changes[CURRENT_LIST_VERSION].newValue as LinkNodeFlat[] || [];
-            appState.rawList.val = list;
-            appState.updateNames();
-            appState.root.val = TreeService.buildTree(list);
+            AppState.rawList.val = list;
+            AppState.updateNames();
+            AppState.root.val = TreeService.buildTree(list);
             UiComponents.renderWelcomeMessage();
           }
           
           // Handle settings changes
           if (changes[SETTINGS_VERSION]) {
             const newSettings = changes[SETTINGS_VERSION].newValue as Settings;
-            appState.settings.val = newSettings;
+            AppState.settings.val = newSettings;
             applyTheme(newSettings.theme);
           }
           

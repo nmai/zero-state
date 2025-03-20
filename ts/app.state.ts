@@ -2,26 +2,26 @@ import { LinkNode, LinkNodeFlat, Settings } from './types';
 import { state } from './van'
 
 export class AppState {
-  editMode = state(false);
-  settingsMode = state(false);
-  rawList = state<LinkNodeFlat[]>([]);
-  names = state<string[]>([]);
-  root = state<LinkNode>({
+  static editMode = state(false);
+  static settingsMode = state(false);
+  static rawList = state<LinkNodeFlat[]>([]);
+  static names = state<string[]>([]);
+  static root = state<LinkNode>({
     name: 'Root',
     children: []
   });
-  createdTable = state<Record<string, LinkNode>>({});
-  editingNode = state<LinkNodeFlat | null>(null);
-  settings = state<Settings>({
+  static createdTable = state<Record<string, LinkNode>>({});
+  static editingNode = state<LinkNodeFlat | null>(null);
+  static settings = state<Settings>({
     showFavicons: true,
     enableRightClickComplete: false,
     theme: 'system'
   });
   
   // Cache of name to index for O(1) lookups
-  private nameToIndexMap: Map<string, number> = new Map();
+  private static nameToIndexMap: Map<string, number> = new Map();
 
-  updateNames(): void {
+  static updateNames(): void {
     this.names.val = this.rawList.val.map(item => item.name);
     
     // Update the name to index map for fast lookups
@@ -31,13 +31,13 @@ export class AppState {
     });
   }
 
-  addItem(item: LinkNodeFlat): void {
+  static addItem(item: LinkNodeFlat): void {
     this.rawList.val = [...this.rawList.val, item];
     this.nameToIndexMap.set(item.name, this.rawList.val.length - 1);
     this.names.val = [...this.names.val, item.name];
   }
 
-  removeItem(item: LinkNodeFlat): void {
+  static removeItem(item: LinkNodeFlat): void {
     const index = this.nameToIndexMap.get(item.name);
     
     if (index !== undefined) {
@@ -48,7 +48,7 @@ export class AppState {
     }
   }
 
-  toggleTaskComplete(node: LinkNodeFlat): void {
+  static toggleTaskComplete(node: LinkNodeFlat): void {
     const index = this.nameToIndexMap.get(node.name);
     
     if (index !== undefined) {
@@ -59,7 +59,7 @@ export class AppState {
     }
   }
 
-  swapNodePositions(node1: LinkNodeFlat, node2: LinkNodeFlat): void {
+  static swapNodePositions(node1: LinkNodeFlat, node2: LinkNodeFlat): void {
     const index1 = this.nameToIndexMap.get(node1.name);
     const index2 = this.nameToIndexMap.get(node2.name);
     
@@ -75,7 +75,7 @@ export class AppState {
     }
   }
 
-  updateItem(originalName: string, updatedItem: LinkNodeFlat): void {
+  static updateItem(originalName: string, updatedItem: LinkNodeFlat): void {
     const index = this.nameToIndexMap.get(originalName);
     
     if (index !== undefined) {

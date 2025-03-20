@@ -5,8 +5,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild ts/app.ts --bundle --outfile=dist/app.js",
-    "watch": "esbuild --watch ts/app.ts --sourcemap --bundle --outfile=dist/app.js"
+    "build": "esbuild ts/app.ts --bundle --sourcemap --outfile=dist/app.js",
+    "build-min": "esbuild ts/app.ts --bundle --sourcemap --outfile=dist/app.js --minify",
+    "watch": "esbuild --watch ts/app.ts --bundle --sourcemap --outfile=dist/app.js"
   },
   "repository": {
     "type": "git",
