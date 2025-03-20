@@ -60,7 +60,7 @@
   background-color: lightgray;
 }
 .tree-list .tree-item > span > a > span {
-  background-color: light-dark(white, #bdc1c6);
+  /* background-color: light-dark(white, #bdc1c6); */
   /* border: 1px solid #9aa0a6; */
   border-radius: 50%;
   display: inline-flex;

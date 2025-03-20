@@ -11,6 +11,7 @@ export interface LinkNode extends LinkNodeFlat {
 }
 
 export interface Settings {
+  faviconProvider: 'duckduckgo' | 'chrome';
   showFavicons: boolean;
   enableRightClickComplete: boolean;
   theme: 'light' | 'dark' | 'system';

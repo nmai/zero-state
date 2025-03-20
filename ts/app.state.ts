@@ -1,6 +1,8 @@
 import { LinkNode, LinkNodeFlat, Settings } from './types';
 import { state } from './van'
 
+type FooterMessage = 'request-favicon-permission'
+
 export class AppState {
   static editMode = state(false);
   static settingsMode = state(false);
@@ -13,10 +15,12 @@ export class AppState {
   static createdTable = state<Record<string, LinkNode>>({});
   static editingNode = state<LinkNodeFlat | null>(null);
   static settings = state<Settings>({
+    faviconProvider: 'chrome',
     showFavicons: true,
     enableRightClickComplete: false,
     theme: 'system'
   });
+  static footerMessages = state<Set<FooterMessage>>(new Set());
   
   // Cache of name to index for O(1) lookups
   private static nameToIndexMap: Map<string, number> = new Map();
@@ -89,5 +93,10 @@ export class AppState {
         this.updateNames(); // Rebuild the name index map
       }
     }
+  }
+
+  static addFooterMessage(message: FooterMessage) {
+    console.log(`Adding footer message`, message)
+    this.footerMessages.val.add(message);
   }
 }

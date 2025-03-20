@@ -7,32 +7,12 @@ import { LinkNode, LinkNodeFlat, Settings } from './types';
 import { add, state, derive, div, a, form, label, input, span, ul, li, br, img, h2, h3, p } from './van'
 import { ValidatorService } from './validator.service';
 import { TreeService } from './tree.service';
+import { FaviconService } from './favicon.service';
+import { renderFooter } from './footer.component';
 
 
 // UI Components using VanJS
 class UiComponents {
-  // Cache for favicon URLs to avoid redundant URL parsing
-  private static faviconCache: Map<string, string> = new Map();
-  
-  static getFaviconUrl(urlStr: string): string {
-    // Return from cache if available
-    if (this.faviconCache.has(urlStr)) {
-      return this.faviconCache.get(urlStr)!;
-    }
-    
-    try {
-      const url = new URL(urlStr);
-      // Use DuckDuckGo's favicon service instead of hardcoded URLs
-      const result = `https://icons.duckduckgo.com/ip2/${url.hostname}.ico`;
-      this.faviconCache.set(urlStr, result);
-      return result;
-    } catch (error) {
-      console.error('Invalid URL for favicon:', urlStr, error);
-      const fallback = 'misc/favicon.ico';
-      this.faviconCache.set(urlStr, fallback);
-      return fallback; // Fallback to default favicon
-    }
-  }
 
   static createDeleteButton(node: LinkNodeFlat) {
     return a({ href: "#", onclick: (e: Event) => {
@@ -148,7 +128,7 @@ class UiComponents {
           // Only show favicon if enabled in settings and not in edit mode
           () => AppState.editMode.val || !AppState.settings.val.showFavicons ? 
                 null : 
-                span({}, img({ src: this.getFaviconUrl(node.url || ''), class: "favicon" })),
+                span({}, img({ src: FaviconService.getIcon(node.url || ''), class: "favicon" })),
           node.name
         )
       );
@@ -508,35 +488,6 @@ class UiComponents {
     };
   }
   
-  static renderFooter() {
-    const handleLinkClick = (e: Event, action: string) => {
-      e.preventDefault();
-      
-      switch (action) {
-        case 'settings':
-          AppState.settingsMode.val = !AppState.settingsMode.val;
-          if (AppState.editMode.val) AppState.editMode.val = false;
-          break;
-          
-        case 'new':
-          AppState.editMode.val = !AppState.editMode.val;
-          if (AppState.settingsMode.val) AppState.settingsMode.val = false;
-          break;
-      }
-    };
-    
-    return div({ id: "footer" },
-      a({ 
-        href: "#", 
-        onclick: (e) => handleLinkClick(e, 'new')
-      }, "[+]"),
-      a({ 
-        href: "#", 
-        onclick: (e) => handleLinkClick(e, 'settings')
-      }, "[settings]"),
-    );
-  }
-  
   static renderApp() {
     return div({},
       // Overlay container for welcome message
@@ -552,7 +503,7 @@ class UiComponents {
       ),
       
       // Footer
-      UiComponents.renderFooter()
+      renderFooter()
     );
   }
 }
@@ -582,6 +533,10 @@ async function initializeApp(): Promise<void> {
     
     // Render welcome message if needed
     UiComponents.renderWelcomeMessage();
+
+    if (await FaviconService.shouldRequestPermission()) {
+      AppState.addFooterMessage('request-favicon-permission');
+    }
     
     // Listen for storage changes - throttled to avoid excessive processing
     let debounceTimer: number | null = null;

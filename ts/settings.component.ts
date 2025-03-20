@@ -3,7 +3,7 @@ import { AppState } from './app.state';
 import { StorageService } from './storage.service';
 import { applyTheme } from './theme.service';
 import { Settings } from './types';
-import { a, div, h2, h3, input, label, p } from './van'
+import { a, div, h2, h3, input, label, p, select, option } from './van'
 
 export class SettingsComponent {
 
@@ -15,8 +15,8 @@ export class SettingsComponent {
     console.log("Rendering settings page");
 
     const updateSetting = (key: keyof Settings, value: any) => {
-      const newSettings = { ...this.state.settings.val, [key]: value };
-      this.state.settings.val = newSettings;
+      const newSettings = { ...AppState.settings.val, [key]: value };
+      AppState.settings.val = newSettings;
       
       // Apply theme immediately if it changes
       if (key === 'theme') {
@@ -40,7 +40,7 @@ export class SettingsComponent {
           class: "close-settings-btn",
           onclick: (e: Event) => {
             e.preventDefault();
-            this.state.settingsMode.val = false;
+            AppState.settingsMode.val = false;
           },
           innerHTML: ICONS.CLOSE
         })
@@ -54,7 +54,7 @@ export class SettingsComponent {
             input({
               type: "checkbox",
               id: "favicon-toggle",
-              checked: this.state.settings.val.showFavicons,
+              checked: AppState.settings.val.showFavicons,
               onchange: (e: Event) => {
                 updateSetting('showFavicons', (e.target as HTMLInputElement).checked);
               }
@@ -62,7 +62,23 @@ export class SettingsComponent {
             "Show Favicons"
           ),
           p({ class: "setting-description" }, 
-            "When enabled, favicons are fetched from DuckDuckGo's icon service."
+            "When enabled, favicons are fetched from your selected favicon provider."
+          )
+        ),
+        div({ class: "setting-item" },
+          label({ for: "favicon-provider" }, "Favicon Provider"),
+          select({
+            id: "favicon-provider",
+            value: AppState.settings.val.faviconProvider || 'chrome',
+            onchange: (e: Event) => {
+              updateSetting('faviconProvider', (e.target as HTMLSelectElement).value);
+            }
+          },
+            option({ value: "chrome" }, "Chrome"),
+            option({ value: "duckduckgo" }, "DuckDuckGo")
+          ),
+          p({ class: "setting-description" },
+            "Choose which service to use for fetching favicons."
           )
         )
       ),
@@ -75,7 +91,7 @@ export class SettingsComponent {
             input({
               type: "checkbox",
               id: "right-click-toggle",
-              checked: this.state.settings.val.enableRightClickComplete,
+              checked: AppState.settings.val.enableRightClickComplete,
               onchange: (e: Event) => {
                 updateSetting('enableRightClickComplete', (e.target as HTMLInputElement).checked);
               }
@@ -99,7 +115,7 @@ export class SettingsComponent {
                 id: "theme-light",
                 name: "theme",
                 value: "light",
-                checked: this.state.settings.val.theme === 'light',
+                checked: AppState.settings.val.theme === 'light',
                 onchange: () => updateSetting('theme', 'light')
               }),
               "Light"
@@ -110,7 +126,7 @@ export class SettingsComponent {
                 id: "theme-dark",
                 name: "theme",
                 value: "dark",
-                checked: this.state.settings.val.theme === 'dark',
+                checked: AppState.settings.val.theme === 'dark',
                 onchange: () => updateSetting('theme', 'dark')
               }),
               "Dark"
@@ -121,7 +137,7 @@ export class SettingsComponent {
                 id: "theme-system",
                 name: "theme",
                 value: "system",
-                checked: this.state.settings.val.theme === 'system',
+                checked: AppState.settings.val.theme === 'system',
                 onchange: () => updateSetting('theme', 'system')
               }),
               "System (Default)"
