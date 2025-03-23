@@ -1,21 +1,39 @@
 import { AppState } from './app.state';
+import { ICONS } from './constants';
+import { FaviconProvider, LinkNodeFlat } from './types';
 
 export class FaviconService {
   // Cache for favicon URLs to avoid redundant URL parsing
+  // REVIEW: is this even useful?
   private static faviconCache: Map<string, string> = new Map();
+  // REVIEW: This seems pretty extra when we could just include a svg icon in filesystem
+  private static _genericIconBlob: string;
+  private static get genericIconBlob(): string {
+    if (!this._genericIconBlob) {
+      this._genericIconBlob = svgToUrl(ICONS.LINK);
+    }
+    return this._genericIconBlob;
+  }
 
-  // Chrome built-in favicon cache. Seems inconsistent.
-  static getIcon(urlStr: string): string {
+  static displayIcon(node: LinkNodeFlat): boolean {
+    if (!node.url) return false;
+    if (node.icon === FaviconProvider.None) return false;
+    // Hide if in edit mode
+    if (AppState.editMode.val) return false;
+    return true;
+  }
+
+  static getIcon(urlStr: string, provider?: FaviconProvider): string {
     const url = new URL(urlStr);
-
-    switch (AppState.settings.val.faviconProvider ?? 'chrome') {
-      case 'chrome':
-        const u = new URL(chrome.runtime.getURL("/_favicon/"));
-        u.searchParams.set("pageUrl", urlStr);
-        // u.searchParams.set("pageUrl", `https://${hostname}/`);
-        u.searchParams.set("size", "32");
-        return u.toString();
-      case 'duckduckgo':
+    
+    switch (provider) {
+      // Chrome built-in favicon cache
+      case FaviconProvider.Chrome:
+        const cacheUrl = new URL(chrome.runtime.getURL("/_favicon/"));
+        cacheUrl.searchParams.set("pageUrl", urlStr);
+        cacheUrl.searchParams.set("size", "32");
+        return cacheUrl.toString();
+      case FaviconProvider.DuckDuckGo:
         // Return from cache if available
         if (this.faviconCache.has(urlStr)) {
           return this.faviconCache.get(urlStr)!;
@@ -31,9 +49,17 @@ export class FaviconService {
           this.faviconCache.set(urlStr, fallback);
           return fallback; // Fallback to default favicon
         }
+      case FaviconProvider.Generic:
+        return this.genericIconBlob;
+      case FaviconProvider.None:
+        return 'undefined';
+      default:
+        console.warn(`Unknown favicon provider: ${provider}`);
+        return 'undefined';
     }
   }
 
+  // TODO: Update to support the new per-node workflow
   static async shouldRequestPermission() {
     console.log(`Checking favicon permission`)
     if (AppState.settings.val.showFavicons) {
@@ -54,4 +80,10 @@ export class FaviconService {
       }
     }
   }
+}
+
+function svgToUrl(svg: string): string {
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  return url;
 }

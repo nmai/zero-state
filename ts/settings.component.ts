@@ -46,43 +46,6 @@ export class SettingsComponent {
         })
       ),
       
-      // Favicon Setting
-      div({ class: "settings-group" },
-        h3({}, "Favicons"),
-        div({ class: "setting-item" },
-          label({ for: "favicon-toggle" },
-            input({
-              type: "checkbox",
-              id: "favicon-toggle",
-              checked: AppState.settings.val.showFavicons,
-              onchange: (e: Event) => {
-                updateSetting('showFavicons', (e.target as HTMLInputElement).checked);
-              }
-            }),
-            "Show Favicons"
-          ),
-          p({ class: "setting-description" }, 
-            "When enabled, favicons are fetched from your selected favicon provider."
-          )
-        ),
-        div({ class: "setting-item" },
-          label({ for: "favicon-provider" }, "Favicon Provider"),
-          select({
-            id: "favicon-provider",
-            value: AppState.settings.val.faviconProvider || 'chrome',
-            onchange: (e: Event) => {
-              updateSetting('faviconProvider', (e.target as HTMLSelectElement).value);
-            }
-          },
-            option({ value: "chrome" }, "Chrome"),
-            option({ value: "duckduckgo" }, "DuckDuckGo")
-          ),
-          p({ class: "setting-description" },
-            "Choose which service to use for fetching favicons."
-          )
-        )
-      ),
-      
       // Right-click Complete Setting
       div({ class: "settings-group" },
         h3({}, "Task Completion"),

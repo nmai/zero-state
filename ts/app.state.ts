@@ -1,4 +1,5 @@
-import { LinkNode, LinkNodeFlat, Settings } from './types';
+
+import { FaviconProvider, LinkNode, LinkNodeFlat, Settings } from './types';
 import { state } from './van'
 
 type FooterMessage = 'request-favicon-permission'
@@ -15,8 +16,7 @@ export class AppState {
   static createdTable = state<Record<string, LinkNode>>({});
   static editingNode = state<LinkNodeFlat | null>(null);
   static settings = state<Settings>({
-    faviconProvider: 'chrome',
-    showFavicons: true,
+    defaultFaviconProvider: FaviconProvider.None,
     enableRightClickComplete: false,
     theme: 'system'
   });
@@ -55,12 +55,15 @@ export class AppState {
   static toggleTaskComplete(node: LinkNodeFlat): void {
     const index = this.nameToIndexMap.get(node.name);
     
-    if (index !== undefined) {
-      // Create a new array and only clone the specific element we need to modify
-      const newList = [...this.rawList.val];
-      newList[index] = { ...newList[index], taskComplete: !newList[index].taskComplete };
-      this.rawList.val = newList;
-    }
+    if (index === undefined) return;
+
+    const newList = [...this.rawList.val];
+    newList[index] = { ...newList[index] };
+    
+    if (node.taskComplete) delete newList[index].taskComplete;
+    else newList[index].taskComplete = true;
+
+    this.rawList.val = newList;
   }
 
   static swapNodePositions(node1: LinkNodeFlat, node2: LinkNodeFlat): void {

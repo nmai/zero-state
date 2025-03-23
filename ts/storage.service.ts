@@ -1,11 +1,20 @@
 import { CURRENT_LIST_VERSION, SETTINGS_VERSION } from './constants';
-import { LinkNodeFlat, Settings } from './types';
+import { FaviconProvider, LinkNodeFlat, Settings } from './types';
 
 // Storage Service
 export class StorageService {
   // Cache for the last saved list to avoid unnecessary storage operations
   private static lastSavedListJson: string = '';
   private static lastSavedSettingsJson: string = '';
+
+  /**
+   * Change this to use max bytes after migrating away from single list
+   */
+  static async printStartupInfo() {
+    const bytesInUse = await chrome.storage.sync.getBytesInUse("links-v1");
+    const maxBytes = chrome.storage.sync.QUOTA_BYTES_PER_ITEM;
+    console.log(`Bytes in use: ${bytesInUse} (${Math.ceil(bytesInUse/maxBytes*100)}%)`);
+  }
 
   static save(list: LinkNodeFlat[]): Promise<void> {
     // Clone to break references and clean
@@ -74,31 +83,34 @@ export class StorageService {
     });
   }
 
-  static loadSettings(): Promise<Settings> {
-    return new Promise((resolve, reject) => {
-      chrome.storage.sync.get(SETTINGS_VERSION, (result) => {
-        if (chrome.runtime.lastError) {
-          console.error('Error loading settings:', chrome.runtime.lastError);
-          reject(chrome.runtime.lastError);
-        } else {
-          const data = result[SETTINGS_VERSION] as Settings | undefined;
-          
-          const defaultSettings: Settings = {
-            showFavicons: true,
-            enableRightClickComplete: false,
-            theme: 'system'
-          };
-          
-          // Merge with default settings to ensure all properties exist
-          const mergedSettings = data ? { ...defaultSettings, ...data } : defaultSettings;
-          
-          if (mergedSettings) {
-            this.lastSavedSettingsJson = JSON.stringify(mergedSettings);
-          }
-          
-          resolve(mergedSettings);
-        }
-      });
+  static async loadSettings(): Promise<Settings> {
+    const result = await chrome.storage.sync.get(SETTINGS_VERSION);
+    const data = result[SETTINGS_VERSION] as Settings | undefined;
+    
+    const defaultSettings: Settings = {
+      defaultFaviconProvider: FaviconProvider.None,
+      enableRightClickComplete: false,
+      theme: 'system'
+    };
+    
+    // Merge with default settings to ensure all properties exist
+    const mergedSettings = data ? { ...defaultSettings, ...data } : defaultSettings;
+    
+    if (mergedSettings) {
+      this.lastSavedSettingsJson = JSON.stringify(mergedSettings);
+    }
+    
+    return mergedSettings;
+  }
+
+  static applyNodeDefaults(nodes: LinkNodeFlat[]) {
+    nodes.forEach((node) => {
+      if (node.border === undefined) {
+        node.border = 1;
+      }
+      if (node.icon === undefined) {
+        node.icon = FaviconProvider.Chrome;
+      }
     });
   }
 }

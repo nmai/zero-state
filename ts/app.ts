@@ -119,16 +119,20 @@ class UiComponents {
       }
     };
 
+    function faviconClasses(node: LinkNodeFlat) {
+      if (node.border == 1)
+        return "favicon border-effect";
+      return "favicon";
+    }
+
     if (node.url) {
       return span({ class: contentClasses.join(' ') }, 
         a({ 
           href: node.url, 
           onclick: handleNodeClick
         }, 
-          // Only show favicon if enabled in settings and not in edit mode
-          () => AppState.editMode.val || !AppState.settings.val.showFavicons ? 
-                null : 
-                span({}, img({ src: FaviconService.getIcon(node.url || ''), class: "favicon" })),
+          () => FaviconService.displayIcon(node) ? 
+          img({ src: FaviconService.getIcon(node.url || '', node.icon), class: faviconClasses(node) }) : null,
           node.name
         )
       );
@@ -508,6 +512,19 @@ class UiComponents {
   }
 }
 
+function handleListUpdate(list: LinkNodeFlat[]) {
+  AppState.rawList.val = list;
+  StorageService.applyNodeDefaults(list);
+  AppState.updateNames();
+  AppState.root.val = TreeService.buildTree(list);
+  UiComponents.renderWelcomeMessage();
+}
+
+function handleSettingsUpdate(settings: Settings) {
+  AppState.settings.val = settings;
+  applyTheme(settings.theme);
+}
+
 // Initialize application
 async function initializeApp(): Promise<void> {
   try {
@@ -516,57 +533,36 @@ async function initializeApp(): Promise<void> {
       StorageService.load(),
       StorageService.loadSettings()
     ]);
-    
-    AppState.rawList.val = storedList;
-    AppState.updateNames();
-    AppState.settings.val = storedSettings;
-    
-    // Apply theme based on settings
-    applyTheme(storedSettings.theme);
-    
-    // Build tree only once
-    AppState.root.val = TreeService.buildTree(AppState.rawList.val);
-    
+
+    handleListUpdate(storedList);
+    handleSettingsUpdate(storedSettings);
     // Render the entire application using VanJS
     // This creates the complete DOM structure including overlay container, main content, and footer
+    // TODO: Move this to the start instead of waiting for storage to load
     add(document.body, UiComponents.renderApp());
-    
-    // Render welcome message if needed
-    UiComponents.renderWelcomeMessage();
 
+    // TODO: Update to use the new per-node workflow
     if (await FaviconService.shouldRequestPermission()) {
       AppState.addFooterMessage('request-favicon-permission');
     }
+
+    StorageService.printStartupInfo();
     
-    // Listen for storage changes - throttled to avoid excessive processing
-    let debounceTimer: number | null = null;
-    chrome.storage.onChanged.addListener((changes, namespace: string) => {
-      if (namespace === 'sync') {
-        // Clear any pending updates
-        if (debounceTimer !== null) {
-          clearTimeout(debounceTimer);
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === 'sync') {
+        console.log('storage changed', changes);
+
+        // Handle link list changes
+        if (changes[CURRENT_LIST_VERSION]) {
+          const newList = changes[CURRENT_LIST_VERSION].newValue as LinkNodeFlat[] || [];
+          handleListUpdate(newList);
         }
         
-        // Debounce updates to avoid processing multiple changes in quick succession
-        debounceTimer = setTimeout(() => {
-          // Handle link list changes
-          if (changes[CURRENT_LIST_VERSION]) {
-            const list = changes[CURRENT_LIST_VERSION].newValue as LinkNodeFlat[] || [];
-            AppState.rawList.val = list;
-            AppState.updateNames();
-            AppState.root.val = TreeService.buildTree(list);
-            UiComponents.renderWelcomeMessage();
-          }
-          
-          // Handle settings changes
-          if (changes[SETTINGS_VERSION]) {
-            const newSettings = changes[SETTINGS_VERSION].newValue as Settings;
-            AppState.settings.val = newSettings;
-            applyTheme(newSettings.theme);
-          }
-          
-          debounceTimer = null;
-        }, 50) as unknown as number;
+        // Handle settings changes
+        if (changes[SETTINGS_VERSION]) {
+          const newSettings = changes[SETTINGS_VERSION].newValue as Settings;
+          handleSettingsUpdate(newSettings);
+        }
       }
     });
     

@@ -24,7 +24,7 @@ export class TreeService {
     
     // First pass: Create all nodes without connecting them
     for (const item of rawList) {
-      nodeMap[item.name] = { ...item } as LinkNode;
+      nodeMap[item.name] = { ...item };
     }
     
     // Second pass: Connect nodes to their parents
