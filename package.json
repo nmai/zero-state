@@ -20,7 +20,8 @@
   },
   "homepage": "https://github.com/nmai/zero-state#readme",
   "dependencies": {
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vanjs-core": "^1.5.3"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.307",
