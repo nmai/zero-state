@@ -1,10 +1,10 @@
-import { CURRENT_LIST_VERSION, DOM_CLASSES, ICONS, SETTINGS_VERSION } from './constants';
+import { CURRENT_LIST_VERSION, DOM_CLASSES, ICONS, SETTINGS_VERSION, FAVICON_PROVIDER_NAMES } from './constants';
 import { SettingsComponent } from './settings.component';
 import { AppState } from './app.state';
 import { StorageService } from './storage.service';
 import { applyTheme } from './theme.service';
-import { LinkNode, LinkNodeFlat, Settings } from './types';
-import { add, state, derive, div, a, form, label, input, span, ul, li, br, img, h2, h3, p } from './van'
+import { LinkNode, LinkNodeFlat, Settings, FaviconProvider } from './types';
+import { add, state, derive, div, a, form, label, input, span, ul, li, br, img, h2, h3, p, select, option } from './van'
 import { ValidatorService } from './validator.service';
 import { TreeService } from './tree.service';
 import { FaviconService } from './favicon.service';
@@ -234,6 +234,8 @@ class UiComponents {
     const nameField = state('');
     const urlField = state('');
     const parentField = state('');
+    const iconField = state('');
+    const borderField = state(1); // Default to 1 (yes)
     
     // Set up to track if we're in edit mode
     const isEditing = () => AppState.editingNode.val !== null;
@@ -246,12 +248,16 @@ class UiComponents {
         nameField.val = editNode.name;
         urlField.val = editNode.url || '';
         parentField.val = editNode.parent || '';
+        iconField.val = editNode.icon || AppState.settings.val.defaultFaviconProvider;
+        borderField.val = editNode.border ?? 1;
         originalName.val = editNode.name;
       } else {
         // Clear the form when not editing
         nameField.val = '';
         urlField.val = '';
         parentField.val = '';
+        iconField.val = AppState.settings.val.defaultFaviconProvider;
+        borderField.val = 1;
         originalName.val = '';
       }
     });
@@ -262,6 +268,8 @@ class UiComponents {
       const name = nameField.val.trim();
       const url = urlField.val.trim();
       const parent = parentField.val.trim();
+      const icon = iconField.val as FaviconProvider;
+      const border = borderField.val;
       
       // Validation - slightly different for edit vs add
       let errorMessage: string | null = null;
@@ -289,6 +297,8 @@ class UiComponents {
         name: name,
         url: url || undefined,
         parent: parent || undefined,
+        icon: icon,
+        border: border as 0 | 1,
       };
       
       // If editing an existing node, preserve its task status
@@ -299,6 +309,14 @@ class UiComponents {
       // Either update or add the item
       if (isEditing()) {
         AppState.updateItem(originalName.val, item);
+        // Update default provider if changed
+        if (icon !== AppState.settings.val.defaultFaviconProvider) {
+          const newSettings = { ...AppState.settings.val, defaultFaviconProvider: icon as FaviconProvider };
+          AppState.settings.val = newSettings;
+          StorageService.saveSettings(newSettings).catch(error => {
+            console.error('Failed to save settings:', error);
+          });
+        }
       } else {
         AppState.addItem(item);
       }
@@ -312,6 +330,8 @@ class UiComponents {
           nameField.val = '';
           urlField.val = '';
           parentField.val = '';
+          iconField.val = AppState.settings.val.defaultFaviconProvider;
+          borderField.val = 1;
           originalName.val = '';
           
           // Update tree and welcome message
@@ -376,6 +396,31 @@ class UiComponents {
         oninput: (e: Event) => parentField.val = (e.target as HTMLInputElement).value 
       }), br(),
       
+      // Icon dropdown
+      label({ for: "newlink-icon" }, "Icon:"), br(),
+      div({ class: "select-wrapper" },
+        select({ 
+          id: "newlink-icon", 
+          name: "newlink-icon",
+          value: iconField,
+          onchange: (e: Event) => iconField.val = (e.target as HTMLSelectElement).value as FaviconProvider
+        },
+          ...Object.keys(FAVICON_PROVIDER_NAMES).map((value: string) =>
+            option({ value }, FAVICON_PROVIDER_NAMES[value as keyof typeof FAVICON_PROVIDER_NAMES])
+          )
+        ),
+        br(),
+        select({ 
+          id: "newlink-border", 
+          name: "newlink-border",
+          value: borderField,
+          onchange: (e: Event) => borderField.val = parseInt((e.target as HTMLSelectElement).value)
+        },
+          option({ value: "1" }, "Bordered"),
+          option({ value: "0" }, "No border")
+        )
+      ), br(),
+      
       div({ class: "form-actions" },
         input({ 
           type: "submit", 
@@ -392,6 +437,8 @@ class UiComponents {
               nameField.val = '';
               urlField.val = '';
               parentField.val = '';
+              iconField.val = AppState.settings.val.defaultFaviconProvider;
+              borderField.val = 1;
               originalName.val = '';
             }
           }) : null

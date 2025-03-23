@@ -38,9 +38,9 @@ export const ICONS = {
 };
 
 export const FAVICON_PROVIDER_NAMES: { [key in FaviconProvider]: string } = {
-  [FaviconProvider.None]: 'None (disabled)',
+  [FaviconProvider.Chrome]: 'Dynamic (Chrome cache)',
+  [FaviconProvider.DuckDuckGo]: 'Dynamic (DuckDuckGo API)',
   [FaviconProvider.Generic]: 'Generic link icon',
-  [FaviconProvider.Chrome]: 'Dynamic: Chrome cache',
-  [FaviconProvider.DuckDuckGo]: 'Dynamic: DuckDuckGo API',
+  [FaviconProvider.None]: 'None (disabled)',
 }
 
