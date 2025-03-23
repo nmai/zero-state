@@ -104,12 +104,16 @@ export class StorageService {
   }
 
   static applyNodeDefaults(nodes: LinkNodeFlat[]) {
+    console.log('Parsing node list', nodes);
     nodes.forEach((node) => {
       if (node.border === undefined) {
         node.border = 1;
       }
       if (node.icon === undefined) {
         node.icon = FaviconProvider.Chrome;
+      }
+      if (!node.taskComplete) {
+        delete node.taskComplete;
       }
     });
   }
