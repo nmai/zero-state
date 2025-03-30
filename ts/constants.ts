@@ -1,4 +1,4 @@
-import { FaviconProvider } from './types';
+import { FaviconProvider, Settings } from './types';
 
 // Constants
 export const CURRENT_LIST_VERSION = 'links-v1';
@@ -42,5 +42,11 @@ export const FAVICON_PROVIDER_NAMES: { [key in FaviconProvider]: string } = {
   [FaviconProvider.DuckDuckGo]: 'Dynamic (DuckDuckGo API)',
   [FaviconProvider.Generic]: 'Generic link icon',
   [FaviconProvider.None]: 'None (disabled)',
+}
+
+export const DEFAULT_SETTINGS: Settings = {
+  defaultFaviconProvider: Object.keys(FAVICON_PROVIDER_NAMES)[0] as FaviconProvider,
+  enableRightClickComplete: false,
+  theme: 'system'
 }
 

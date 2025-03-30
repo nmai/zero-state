@@ -32,82 +32,92 @@ export class SettingsComponent {
     };
 
     // Create the settings form
-    return div({ class: DOM_CLASSES.SETTINGS_PAGE }, 
-      div({ class: "settings-header" }, 
-        h2({}, "Settings"),
-        a({ 
-          href: "#", 
-          class: "close-settings-btn",
-          onclick: (e: Event) => {
-            e.preventDefault();
-            AppState.settingsMode.val = false;
-          },
-          innerHTML: ICONS.CLOSE
-        })
-      ),
-      
-      // Right-click Complete Setting
-      div({ class: "settings-group" },
-        h3({}, "Task Completion"),
-        div({ class: "setting-item" },
-          label({ for: "right-click-toggle" },
-            input({
-              type: "checkbox",
-              id: "right-click-toggle",
-              checked: AppState.settings.val.enableRightClickComplete,
-              onchange: (e: Event) => {
-                updateSetting('enableRightClickComplete', (e.target as HTMLInputElement).checked);
-              }
-            }),
-            "Enable Right-click to Mark as Done"
-          ),
-          p({ class: "setting-description" }, 
-            "When enabled, right-clicking on an item will toggle its completion status."
-          )
-        )
-      ),
-      
-      // Theme Setting
-      div({ class: "settings-group" },
-        h3({}, "Theme"),
-        div({ class: "setting-item" },
-          div({ class: "radio-group" },
-            label({ for: "theme-light" },
+    return div({ 
+      class: `modal`,
+      onclick: (e: Event) => {
+        // Close modal when clicking the backdrop (outside the modal)
+        if ((e.target as HTMLElement).classList.contains('modal')) {
+          AppState.settingsMode.val = false;
+        }
+      }
+    }, 
+      div({ class: "settings-page" }, 
+        div({ class: "settings-header" }, 
+          h2({}, "Settings"),
+          a({ 
+            href: "#", 
+            class: "close-settings-btn",
+            onclick: (e: Event) => {
+              e.preventDefault();
+              AppState.settingsMode.val = false;
+            },
+            innerHTML: ICONS.CLOSE
+          })
+        ),
+        
+        // Right-click Complete Setting
+        div({ class: "settings-group" },
+          h3({}, "Task Completion"),
+          div({ class: "setting-item" },
+            label({ for: "right-click-toggle" },
               input({
-                type: "radio",
-                id: "theme-light",
-                name: "theme",
-                value: "light",
-                checked: AppState.settings.val.theme === 'light',
-                onchange: () => updateSetting('theme', 'light')
+                type: "checkbox",
+                id: "right-click-toggle",
+                checked: AppState.settings.val.enableRightClickComplete,
+                onchange: (e: Event) => {
+                  updateSetting('enableRightClickComplete', (e.target as HTMLInputElement).checked);
+                }
               }),
-              "Light"
+              "Right-click to Mark as Done"
             ),
-            label({ for: "theme-dark" },
-              input({
-                type: "radio",
-                id: "theme-dark",
-                name: "theme",
-                value: "dark",
-                checked: AppState.settings.val.theme === 'dark',
-                onchange: () => updateSetting('theme', 'dark')
-              }),
-              "Dark"
-            ),
-            label({ for: "theme-system" },
-              input({
-                type: "radio",
-                id: "theme-system",
-                name: "theme",
-                value: "system",
-                checked: AppState.settings.val.theme === 'system',
-                onchange: () => updateSetting('theme', 'system')
-              }),
-              "System (Default)"
+            p({ class: "setting-description" }, 
+              "When enabled, right-clicking on an item will apply a strike-through style to the text."
             )
-          ),
-          p({ class: "setting-description" }, 
-            "Choose your preferred theme or use your system's setting."
+          )
+        ),
+        
+        // Theme Setting
+        div({ class: "settings-group" },
+          h3({}, "Theme"),
+          div({ class: "setting-item" },
+            div({ class: "radio-group" },
+              label({ for: "theme-light" },
+                input({
+                  type: "radio",
+                  id: "theme-light",
+                  name: "theme",
+                  value: "light",
+                  checked: AppState.settings.val.theme === 'light',
+                  onchange: () => updateSetting('theme', 'light')
+                }),
+                "Light"
+              ),
+              label({ for: "theme-dark" },
+                input({
+                  type: "radio",
+                  id: "theme-dark",
+                  name: "theme",
+                  value: "dark",
+                  checked: AppState.settings.val.theme === 'dark',
+                  onchange: () => updateSetting('theme', 'dark')
+                }),
+                "Dark"
+              ),
+              label({ for: "theme-system" },
+                input({
+                  type: "radio",
+                  id: "theme-system",
+                  name: "theme",
+                  value: "system",
+                  checked: AppState.settings.val.theme === 'system',
+                  onchange: () => updateSetting('theme', 'system')
+                }),
+                "System (Default)"
+              )
+            ),
+            p({ class: "setting-description" }, 
+              "Choose your preferred theme or use your system's setting."
+            )
           )
         )
       )

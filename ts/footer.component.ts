@@ -10,11 +10,6 @@ const handleLinkClick = (e: Event, action: string) => {
       AppState.settingsMode.val = !AppState.settingsMode.val;
       if (AppState.editMode.val) AppState.editMode.val = false;
       break;
-      
-    case 'new':
-      AppState.editMode.val = !AppState.editMode.val;
-      if (AppState.settingsMode.val) AppState.settingsMode.val = false;
-      break;
 
     case 'request-favicon-permission':
       FaviconService.requestFaviconPermissions();
@@ -42,10 +37,6 @@ export function renderFooter() {
   return div({ class: "footer" },
     () => div(...messages.val),
     div(
-      a({ 
-        href: "#", 
-        onclick: (e) => handleLinkClick(e, 'new')
-      }, "[+]"),
       a({ 
         href: "#", 
         onclick: (e) => handleLinkClick(e, 'settings')

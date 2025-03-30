@@ -1,4 +1,5 @@
-import { CURRENT_LIST_VERSION, SETTINGS_VERSION } from './constants';
+import { AppState } from './app.state';
+import { CURRENT_LIST_VERSION, DEFAULT_SETTINGS, SETTINGS_VERSION } from './constants';
 import { FaviconProvider, LinkNodeFlat, Settings } from './types';
 
 // Storage Service
@@ -86,15 +87,8 @@ export class StorageService {
   static async loadSettings(): Promise<Settings> {
     const result = await chrome.storage.sync.get(SETTINGS_VERSION);
     const data = result[SETTINGS_VERSION] as Settings | undefined;
-    
-    const defaultSettings: Settings = {
-      defaultFaviconProvider: FaviconProvider.None,
-      enableRightClickComplete: false,
-      theme: 'system'
-    };
-    
-    // Merge with default settings to ensure all properties exist
-    const mergedSettings = data ? { ...defaultSettings, ...data } : defaultSettings;
+
+    const mergedSettings = data ? { DEFAULT_SETTINGS, ...data } : DEFAULT_SETTINGS;
     
     if (mergedSettings) {
       this.lastSavedSettingsJson = JSON.stringify(mergedSettings);

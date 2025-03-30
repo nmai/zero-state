@@ -31,8 +31,8 @@ export interface Settings {
 }
 
 export enum FaviconProvider {
-  None = 'none',
-  Generic = 'gen',
   Chrome = 'chrome',
   DuckDuckGo = 'duck',
+  Generic = 'gen',
+  None = 'none',
 }

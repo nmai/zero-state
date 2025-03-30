@@ -13,6 +13,7 @@ import { renderFooter } from './footer.component';
 
 // UI Components using VanJS
 class UiComponents {
+  private static settingsComponent = new SettingsComponent(AppState);
 
   static createDeleteButton(node: LinkNodeFlat) {
     return a({ href: "#", onclick: (e: Event) => {
@@ -21,7 +22,6 @@ class UiComponents {
       StorageService.save(AppState.rawList.val)
         .then(() => {
           AppState.root.val = TreeService.buildTree(AppState.rawList.val);
-          this.renderWelcomeMessage();
         })
         .catch(error => {
           console.error('Failed to save after delete:', error);
@@ -334,9 +334,8 @@ class UiComponents {
           borderField.val = 1;
           originalName.val = '';
           
-          // Update tree and welcome message
+          // Update tree
           AppState.root.val = TreeService.buildTree(AppState.rawList.val);
-          this.renderWelcomeMessage();
         })
         .catch(error => {
           console.error('Failed to save item:', error);
@@ -354,16 +353,16 @@ class UiComponents {
     }, 
       div({ class: "form-header" }, 
         () => isEditing() ? "Edit Item" : "Add New Item",
-        a({ 
-          href: "#", 
-          class: "close-form-btn",
-          onclick: (e: Event) => {
-            e.preventDefault();
-            AppState.editMode.val = false;
-            AppState.editingNode.val = null;
-          },
-          innerHTML: ICONS.CLOSE
-        })
+        // a({ 
+        //   href: "#", 
+        //   class: "close-form-btn",
+        //   onclick: (e: Event) => {
+        //     e.preventDefault();
+        //     AppState.editMode.val = false;
+        //     AppState.editingNode.val = null;
+        //   },
+        //   innerHTML: ICONS.CLOSE
+        // })
       ),
       
       label({ for: "newlink-name" }, "Name:"), br(),
@@ -455,106 +454,46 @@ class UiComponents {
     return a({ 
       id: "toggle-form-btn", 
       href: "#",
-      class: () => AppState.editMode.val ? DOM_CLASSES.DISPLAY_NONE : "",
       onclick: (e: Event) => {
         e.preventDefault();
-        // Only enable edit mode, don't disable (that's now handled by the close button)
-        if (!AppState.editMode.val) {
-          AppState.editMode.val = true;
-        }
+        AppState.editMode.val = !AppState.editMode.val;
         
         // Close settings mode if open
         if (AppState.settingsMode.val) {
           AppState.settingsMode.val = false;
         }
       },
-      innerHTML: ICONS.EDIT
-    });
-  }
-
-  static renderSettingsButton() {
-    return a({ 
-      id: "settings-btn", 
-      href: "#",
-      class: () => AppState.editMode.val ? DOM_CLASSES.DISPLAY_NONE : "",
-      onclick: (e: Event) => {
-        e.preventDefault();
-        AppState.settingsMode.val = !AppState.settingsMode.val;
-        
-        // Close edit mode if open
-        if (AppState.editMode.val) {
-          AppState.editMode.val = false;
-          AppState.editingNode.val = null;
-        }
-      },
-      innerHTML: ICONS.SETTINGS
-    });
-  }
-
-  static renderWelcomeMessage() {
-    // Check if welcome message should be shown
-    const shouldShow = AppState.rawList.val.length === 0;
-    const overlayContainer = document.getElementById('overlay-container');
-    
-    if (!overlayContainer) return;
-    
-    // Only update DOM if there's a change needed
-    const hasWelcomeMessage = overlayContainer.querySelector(`.${DOM_CLASSES.WELCOME_MESSAGE}`);
-    
-    if (shouldShow && !hasWelcomeMessage) {
-      // Clear container and add welcome message
-      overlayContainer.innerHTML = '';
-      const welcomeMessage = div({ class: DOM_CLASSES.WELCOME_MESSAGE },
-        "This is Zero State. To add your first node, click the edit icon in the top right corner"
-      );
-      add(overlayContainer, welcomeMessage);
-    } else if (!shouldShow && hasWelcomeMessage) {
-      // Just clear the welcome message
-      overlayContainer.innerHTML = '';
-    }
+    },
+      () => AppState.editMode.val ? `[−]` : `[+]`
+    );
   }
 
   static renderSidePanel() {
     return div({ class: "row row-side-panel" },
       div({ class: "col" },
-        div({ 
-          class: () => `${DOM_CLASSES.BUTTON_GROUP} ${AppState.editMode.val ? 'hidden-in-edit-mode' : ''}` 
-        },
+        div({},
           this.renderToggleButton(),
-          this.renderSettingsButton()
         ),
         this.renderAddForm()
       )
     );
   }
 
-  static renderMainContent() {
-    // Use van state to create a reactive binding to the root state
-    return () => {
-      if (AppState.settingsMode.val) {
-        return new SettingsComponent(AppState).renderSettingsPage();
-      } else {
-        return this.renderTree();
-      }
-    };
+  static renderOverlay() {
+    return div({ id: "overlay-container" },
+      AppState.settingsMode.val ? this.settingsComponent.renderSettingsPage() : null
+    )
   }
   
-  static renderApp() {
+  static renderMain() {
     return div({},
-      // Overlay container for welcome message
-      div({ id: "overlay-container" }),
-      
       // Main row containing the content
-      div({ class: "row" }, 
+      div({ class: "row" },
         // Main content area - will be populated by renderMainContent
-        UiComponents.renderMainContent(),
-        
-        // Side panel with buttons and form
+        () => this.renderTree(),
+        // Side panel with buttons and form TODO: Move this to overlay
         UiComponents.renderSidePanel()
       ),
-      
-      // Footer
-      renderFooter()
     );
   }
 }
@@ -564,7 +503,6 @@ function handleListUpdate(list: LinkNodeFlat[]) {
   StorageService.applyNodeDefaults(list);
   AppState.updateNames();
   AppState.root.val = TreeService.buildTree(list);
-  UiComponents.renderWelcomeMessage();
 }
 
 function handleSettingsUpdate(settings: Settings) {
@@ -585,8 +523,12 @@ async function initializeApp(): Promise<void> {
     handleSettingsUpdate(storedSettings);
     // Render the entire application using VanJS
     // This creates the complete DOM structure including overlay container, main content, and footer
-    // TODO: Move this to the start instead of waiting for storage to load
-    add(document.body, UiComponents.renderApp());
+    // Review: Consider moving this to the start instead of waiting for storage to load
+    add(document.body,
+      () => UiComponents.renderOverlay(),
+      UiComponents.renderMain(),
+      renderFooter(),
+    );
 
     // TODO: Update to use the new per-node workflow
     if (await FaviconService.shouldRequestPermission()) {

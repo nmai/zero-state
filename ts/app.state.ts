@@ -1,4 +1,5 @@
 
+import { DEFAULT_SETTINGS } from './constants';
 import { FaviconProvider, LinkNode, LinkNodeFlat, Settings } from './types';
 import { state } from './van'
 
@@ -15,11 +16,7 @@ export class AppState {
   });
   static createdTable = state<Record<string, LinkNode>>({});
   static editingNode = state<LinkNodeFlat | null>(null);
-  static settings = state<Settings>({
-    defaultFaviconProvider: FaviconProvider.None,
-    enableRightClickComplete: false,
-    theme: 'system'
-  });
+  static settings = state<Settings>(DEFAULT_SETTINGS);
   static footerMessages = state<Set<FooterMessage>>(new Set());
   
   // Cache of name to index for O(1) lookups

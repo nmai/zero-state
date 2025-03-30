@@ -59,15 +59,14 @@ export class FaviconService {
     }
   }
 
-  // TODO: Update to support the new per-node workflow
   static async shouldRequestPermission() {
     console.log(`Checking favicon permission`)
-    if (AppState.settings.val.showFavicons) {
-      const faviconPermission = await chrome.permissions.contains({permissions: ['favicon']});
-      console.log(`Favicon permission`, faviconPermission)
-      return !faviconPermission;
-    }
-    return false;
+    const faviconPermission = await chrome.permissions.contains({permissions: ['favicon']});
+    console.log(`Granted favicon permission:`, faviconPermission)
+    // Already granted permission
+    if (faviconPermission) return false;
+    // Request permission if any nodes are depending on the Chrome favicon provider
+    return !!AppState.rawList.val.find(node => node.icon === FaviconProvider.Chrome);
   }
 
   static async requestFaviconPermissions() {
