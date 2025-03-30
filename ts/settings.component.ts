@@ -3,7 +3,7 @@ import { AppState } from './app.state';
 import { StorageService } from './storage.service';
 import { applyTheme } from './theme.service';
 import { Settings } from './types';
-import { a, div, h2, h3, input, label, p, select, option } from './van'
+import { a, div, h2, h3, input, label, p, select, option, br } from './van'
 
 export class SettingsComponent {
 
@@ -119,6 +119,15 @@ export class SettingsComponent {
               "Choose your preferred theme or use your system's setting."
             )
           )
+        ),
+
+        br({}),
+
+        div({ class: "settings-group" },
+          div({ class: "setting-description" }, () => {
+            const manifest = chrome.runtime.getManifest()
+            return `Version ${manifest.version}`
+          })
         )
       )
     );

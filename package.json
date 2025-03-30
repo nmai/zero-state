@@ -1,6 +1,6 @@
 {
   "name": "zero-state",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Add links and notes to your New Tab page. Organize them as a single list, a tree, or multiple lists/trees.",
   "type": "module",
   "main": "index.js",

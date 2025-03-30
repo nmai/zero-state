@@ -158,7 +158,7 @@ export class EditForm {
         oninput: (e: Event) => nameField.val = (e.target as HTMLInputElement).value 
       }), br(),
       
-      label({ for: "newlink-url" }, "URL:"), br(),
+      label({ for: "newlink-url" }, "URL (optional):"), br(),
       input({ 
         type: "text", 
         id: "newlink-url", 
@@ -168,7 +168,7 @@ export class EditForm {
         oninput: (e: Event) => urlField.val = (e.target as HTMLInputElement).value 
       }), br(),
       
-      label({ for: "newlink-parent" }, "Parent:"), br(),
+      label({ for: "newlink-parent" }, "Parent (optional):"), br(),
       input({ 
         type: "text", 
         id: "newlink-parent", 
@@ -179,7 +179,7 @@ export class EditForm {
       }), br(),
       
       // Icon dropdown
-      label({ for: "newlink-icon" }, "Icon:"), br(),
+      label({ for: "newlink-icon" }, "Favicon options (for URLs):"), br(),
       div({ class: "select-wrapper" },
         select({ 
           id: "newlink-icon", 
@@ -190,7 +190,7 @@ export class EditForm {
           ...Object.keys(FAVICON_PROVIDER_NAMES).map((value: string) =>
             option({ 
               value,
-              selected: () => iconField.val === value  // Add reactive selected property
+              selected: () => iconField.val === value
             }, 
             FAVICON_PROVIDER_NAMES[value as keyof typeof FAVICON_PROVIDER_NAMES])
           )

@@ -238,6 +238,7 @@ class UiComponents {
       onclick: (e: Event) => {
         e.preventDefault();
         AppState.editMode.val = !AppState.editMode.val;
+        AppState.editingNode.val = null;
         
         // Close settings mode if open
         if (AppState.settingsMode.val) {
@@ -342,10 +343,12 @@ async function initializeApp(): Promise<void> {
     addEventListener("keydown", async (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         AppState.editMode.val = false;
+        AppState.editingNode.val = null;
         AppState.settingsMode.val = false;
       }
       else if (event.key === "`" || event.key === "~") {
         AppState.editMode.val = !AppState.editMode.val;
+        AppState.editingNode.val = null;
       }
     });
     
