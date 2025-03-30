@@ -244,6 +244,7 @@ class UiComponents {
     // Effect to populate the form when editing node changes
     derive(() => {
       const editNode = AppState.editingNode.val;
+      console.log(editNode)
       if (editNode) {
         nameField.val = editNode.name;
         urlField.val = editNode.url || '';
@@ -323,7 +324,7 @@ class UiComponents {
       
       // Save to storage
       StorageService.save(AppState.rawList.val)
-        .then(() => {
+        .then(async () => {
           // Reset state
           AppState.editMode.val = false;
           AppState.editingNode.val = null;
@@ -336,6 +337,11 @@ class UiComponents {
           
           // Update tree
           AppState.root.val = TreeService.buildTree(AppState.rawList.val);
+
+          // Request favicon permission if needed
+          if (await FaviconService.shouldRequestPermission()) {
+            await FaviconService.requestFaviconPermissions();
+          }
         })
         .catch(error => {
           console.error('Failed to save item:', error);
@@ -405,7 +411,11 @@ class UiComponents {
           onchange: (e: Event) => iconField.val = (e.target as HTMLSelectElement).value as FaviconProvider
         },
           ...Object.keys(FAVICON_PROVIDER_NAMES).map((value: string) =>
-            option({ value }, FAVICON_PROVIDER_NAMES[value as keyof typeof FAVICON_PROVIDER_NAMES])
+            option({ 
+              value,
+              selected: () => iconField.val === value  // Add reactive selected property
+            }, 
+            FAVICON_PROVIDER_NAMES[value as keyof typeof FAVICON_PROVIDER_NAMES])
           )
         ),
         br(),
@@ -503,6 +513,14 @@ function handleListUpdate(list: LinkNodeFlat[]) {
   StorageService.applyNodeDefaults(list);
   AppState.updateNames();
   AppState.root.val = TreeService.buildTree(list);
+
+  FaviconService.shouldRequestPermission().then( result => {
+    if (result) {
+      AppState.addFooterMessage('request-favicon-permission');
+    } else {
+      AppState.removeFooterMessage('request-favicon-permission');
+    }
+  });
 }
 
 function handleSettingsUpdate(settings: Settings) {
@@ -529,11 +547,6 @@ async function initializeApp(): Promise<void> {
       UiComponents.renderMain(),
       renderFooter(),
     );
-
-    // TODO: Update to use the new per-node workflow
-    if (await FaviconService.shouldRequestPermission()) {
-      AppState.addFooterMessage('request-favicon-permission');
-    }
 
     StorageService.printStartupInfo();
     

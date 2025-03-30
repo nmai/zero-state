@@ -97,6 +97,16 @@ export class AppState {
 
   static addFooterMessage(message: FooterMessage) {
     console.log(`Adding footer message`, message)
-    this.footerMessages.val.add(message);
+    if (!this.footerMessages.val.has(message)) {
+      this.footerMessages.val = new Set([...this.footerMessages.val, message]);
+    }
+  }
+
+  static removeFooterMessage(message: FooterMessage) {
+    console.log(`Removing footer message`, message)
+    if (this.footerMessages.val.has(message)) {
+      this.footerMessages.val.delete(message);
+      this.footerMessages.val = new Set([...this.footerMessages.val]);
+    }
   }
 }

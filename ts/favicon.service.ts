@@ -1,5 +1,6 @@
 import { AppState } from './app.state';
 import { ICONS } from './constants';
+import { StorageService } from './storage.service';
 import { FaviconProvider, LinkNodeFlat } from './types';
 
 export class FaviconService {
@@ -74,8 +75,11 @@ export class FaviconService {
       const granted = await chrome.permissions.request({permissions: ['favicon']});
       if (granted) {
         console.log(`Favicon permission granted`)
+        AppState.removeFooterMessage('request-favicon-permission');
+        // Force a reload to reload favicons
+        location.reload();
       } else {
-        console.log(`Favicon permission denied, disabling setting`)
+        console.log(`Favicon permission denied. Please change the icon setting for all all items to a different provider to dismiss this message.`)
       }
     }
   }

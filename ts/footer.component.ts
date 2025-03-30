@@ -1,6 +1,6 @@
 import { AppState } from './app.state';
 import { FaviconService } from './favicon.service';
-import { a, derive, div, state } from './van';
+import { a, derive, div, span, state } from './van';
 
 const handleLinkClick = (e: Event, action: string) => {
   e.preventDefault();
@@ -25,9 +25,12 @@ export function renderFooter() {
       messageList.push([
         a({
           href: "#",
-          style: "color: red; ",
           onclick: (e) => FaviconService.requestFaviconPermissions()
-        }, "Fix favicon permissions (!)")
+        },
+        span({
+          // style: "color: red; font-weight: bold;"
+        }, "Action required: Grant permission to use the chrome favicon cache. "),
+        span({}, "Alternatively, change all icons to use a different provider."))
       ]);
     }
     
@@ -35,7 +38,7 @@ export function renderFooter() {
   });
 
   return div({ class: "footer" },
-    () => div(...messages.val),
+    () => div(messages.val),
     div(
       a({ 
         href: "#", 
