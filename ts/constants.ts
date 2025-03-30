@@ -46,7 +46,7 @@ export const FAVICON_PROVIDER_NAMES: { [key in FaviconProvider]: string } = {
 
 export const DEFAULT_SETTINGS: Settings = {
   defaultFaviconProvider: Object.keys(FAVICON_PROVIDER_NAMES)[0] as FaviconProvider,
-  enableRightClickComplete: false,
+  enableRightClickComplete: true,
   theme: 'system'
 }
 

@@ -100,13 +100,21 @@ export class StorageService {
   static applyNodeDefaults(nodes: LinkNodeFlat[]) {
     console.log('Parsing node list', nodes);
     nodes.forEach((node) => {
-      if (node.border === undefined) {
-        node.border = 1;
-      }
-      if (node.icon === undefined) {
-        node.icon = FaviconProvider.Chrome;
+      // Favicon-related options
+      if (node.url) {
+        if (node.border === undefined) {
+          node.border = 1;
+        }
+        if (node.icon === undefined) {
+          node.icon = FaviconProvider.Chrome;
+        }
+      } else {
+        // Cleanup
+        delete node.border;
+        delete node.icon;
       }
       if (!node.taskComplete) {
+        // Cleanup
         delete node.taskComplete;
       }
     });

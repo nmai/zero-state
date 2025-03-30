@@ -244,7 +244,6 @@ class UiComponents {
     // Effect to populate the form when editing node changes
     derive(() => {
       const editNode = AppState.editingNode.val;
-      console.log(editNode)
       if (editNode) {
         nameField.val = editNode.name;
         urlField.val = editNode.url || '';
