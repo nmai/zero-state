@@ -1,0 +1,31 @@
+{
+  "name": "zero-state",
+  "version": "2.0.0",
+  "description": "Add links and notes to your New Tab page. Organize them as a single list, a tree, or multiple lists/trees.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild ts/app.ts --bundle --sourcemap --outfile=dist/app.js",
+    "build-min": "esbuild ts/app.ts --bundle --sourcemap --outfile=dist/app.js --minify",
+    "watch": "esbuild --watch ts/app.ts --bundle --sourcemap --outfile=dist/app.js",
+    "pkg": "cp manifest.json pkg/ && cp -r static pkg/ && cp -r dist pkg/ "
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nmai/zero-state.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nmai/zero-state/issues"
+  },
+  "homepage": "https://github.com/nmai/zero-state#readme",
+  "dependencies": {
+    "typescript": "^5.8.2",
+    "vanjs-core": "^1.5.3"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.307",
+    "esbuild": "0.25.0"
+  }
+}

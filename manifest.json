@@ -1,21 +1,24 @@
 {
-  "name": "zero state",
-  "version": "0.0.4",
+  "name": "zero state: minimalist new tab",
+  "version": "2.0.0",
   "manifest_version": 3,
-  "description": "Zero State 《Chromium Extension》- Loosely organize links and notes on your New Tab page",
-  "homepage_url": "https://github.com/nmai/land-o-links",
+  "description": "Organize links and notes on your New Tab page",
+  "homepage_url": "https://github.com/nmai/zero-state",
   "icons": {
-    "16": "icons/icon16.png",
-    "19": "icons/icon19.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png",
-    "512": "icons/icon512.png"
+    "16": "static/icons/icon16.png",
+    "19": "static/icons/icon19.png",
+    "48": "static/icons/icon48.png",
+    "128": "static/icons/icon128.png",
+    "512": "static/icons/icon512.png"
   },
   "default_locale": "en",
   "chrome_url_overrides": {
-    "newtab": "src/override/override.html"
+    "newtab": "static/index.html"
   },
   "permissions": [
     "storage"
+  ],
+  "optional_permissions": [
+    "favicon"
   ]
 }
