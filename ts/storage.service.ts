@@ -45,21 +45,24 @@ export class StorageService {
     });
   }
 
-  static load(): Promise<LinkNodeFlat[]> {
-    return new Promise((resolve, reject) => {
-      chrome.storage.sync.get(CURRENT_LIST_VERSION, (result) => {
-        if (chrome.runtime.lastError) {
-          console.error('Error loading data:', chrome.runtime.lastError);
-          reject(chrome.runtime.lastError);
-        } else {
-          const data = result[CURRENT_LIST_VERSION] as LinkNodeFlat[] | undefined;
-          if (data) {
-            this.lastSavedListJson = JSON.stringify(data);
-          }
-          resolve(data || []);
-        }
-      });
-    });
+  static async load(): Promise<LinkNodeFlat[]> {
+    const result = await chrome.storage.sync.get(CURRENT_LIST_VERSION)
+    const data = result[CURRENT_LIST_VERSION] as LinkNodeFlat[] | undefined;
+    if (data) {
+      // If data is found in storage, use it
+      this.lastSavedListJson = JSON.stringify(data);
+      return data;
+    } else {
+      // If no data is found, this must be a first-time installation.
+      // Load initial data from a static JSON file. This is the new "Welcome" screen.
+      // NOTE: Keep this json file up to date with the latest data format.
+      console.log("No data found, loading initial-data JSON file instead...");
+      const url = chrome.runtime.getURL('/static/json/initial-data-2.0.0.json');
+      const response = await fetch(url);
+      const initialData = await response.json();
+      this.lastSavedListJson = JSON.stringify(initialData);
+      return initialData;
+    }
   }
 
   static saveSettings(settings: Settings): Promise<void> {

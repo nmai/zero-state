@@ -8,7 +8,7 @@ import { a, div, h2, h3, input, label, p, select, option, br } from './van'
 export class SettingsComponent {
 
   constructor(readonly state: AppState) {
-    console.log("Instantiating settings component")
+    // console.log("Instantiating settings component")
   }
   
   renderSettingsPage() {
