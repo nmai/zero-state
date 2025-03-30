@@ -7,7 +7,8 @@
   "scripts": {
     "build": "esbuild ts/app.ts --bundle --sourcemap --outfile=dist/app.js",
     "build-min": "esbuild ts/app.ts --bundle --sourcemap --outfile=dist/app.js --minify",
-    "watch": "esbuild --watch ts/app.ts --bundle --sourcemap --outfile=dist/app.js"
+    "watch": "esbuild --watch ts/app.ts --bundle --sourcemap --outfile=dist/app.js",
+    "pkg": "cp manifest.json pkg/ && cp -r static pkg/ && cp -r dist pkg/ "
   },
   "repository": {
     "type": "git",
