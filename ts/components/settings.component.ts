@@ -1,60 +1,38 @@
-import { DOM_CLASSES, ICONS } from './constants';
-import { AppState } from './app.state';
-import { StorageService } from './storage.service';
-import { applyTheme } from './theme.service';
-import { Settings } from './types';
-import { a, div, h2, h3, input, label, p, select, option, br } from './van'
+import { SVG_ICONS } from '../core/constants';
+import { Settings } from '../core/types';
+import { a, br, div, h2, h3, input, label, p, select, option } from '../core/van';
+import { CommandService } from '../services/command.service';
+import { DataState } from '../state/data.state';
+import { UIState } from '../state/ui.state';
 
 export class SettingsComponent {
-
-  constructor(readonly state: AppState) {
-    // console.log("Instantiating settings component")
-  }
-  
   renderSettingsPage() {
-    console.log("Rendering settings page");
-
-    const updateSetting = (key: keyof Settings, value: any) => {
-      const newSettings = { ...AppState.settings.val, [key]: value };
-      AppState.settings.val = newSettings;
-      
-      // Apply theme immediately if it changes
-      if (key === 'theme') {
-        applyTheme(value);
-      }
-      
-      // Save settings to storage
-      StorageService.saveSettings(newSettings)
-        .catch(error => {
-          console.error('Failed to save settings:', error);
-          alert('Failed to save settings. Please try again.');
-        });
+    const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
+      CommandService.updateSetting(key, value);
     };
 
-    // Create the settings form
-    return div({ 
+    return div({
       class: `modal`,
       onclick: (e: Event) => {
-        // Close modal when clicking the backdrop (outside the modal)
         if ((e.target as HTMLElement).classList.contains('modal')) {
-          AppState.settingsMode.val = false;
+          UIState.settingsMode.val = false;
         }
       }
-    }, 
-      div({ class: "settings-page" }, 
-        div({ class: "settings-header" }, 
+    },
+      div({ class: "settings-page" },
+        div({ class: "settings-header" },
           h2({}, "Settings"),
-          a({ 
-            href: "#", 
+          a({
+            href: "#",
             class: "close-settings-btn",
             onclick: (e: Event) => {
               e.preventDefault();
-              AppState.settingsMode.val = false;
+              UIState.settingsMode.val = false;
             },
-            innerHTML: ICONS.CLOSE
+            innerHTML: SVG_ICONS['close']
           })
         ),
-        
+
         // Right-click Complete Setting
         div({ class: "settings-group" },
           h3({}, "Task Completion"),
@@ -63,19 +41,19 @@ export class SettingsComponent {
               input({
                 type: "checkbox",
                 id: "right-click-toggle",
-                checked: AppState.settings.val.enableRightClickComplete,
+                checked: DataState.settings.val.enableRightClickComplete,
                 onchange: (e: Event) => {
                   updateSetting('enableRightClickComplete', (e.target as HTMLInputElement).checked);
                 }
               }),
               "Right-click to Mark as Done"
             ),
-            p({ class: "setting-description" }, 
+            p({ class: "setting-description" },
               "When enabled, right-clicking on an item will apply a strike-through style to the text."
             )
           )
         ),
-        
+
         // Theme Setting
         div({ class: "settings-group" },
           h3({}, "Theme"),
@@ -87,7 +65,7 @@ export class SettingsComponent {
                   id: "theme-light",
                   name: "theme",
                   value: "light",
-                  checked: AppState.settings.val.theme === 'light',
+                  checked: DataState.settings.val.theme === 'light',
                   onchange: () => updateSetting('theme', 'light')
                 }),
                 "Light"
@@ -98,7 +76,7 @@ export class SettingsComponent {
                   id: "theme-dark",
                   name: "theme",
                   value: "dark",
-                  checked: AppState.settings.val.theme === 'dark',
+                  checked: DataState.settings.val.theme === 'dark',
                   onchange: () => updateSetting('theme', 'dark')
                 }),
                 "Dark"
@@ -109,13 +87,13 @@ export class SettingsComponent {
                   id: "theme-system",
                   name: "theme",
                   value: "system",
-                  checked: AppState.settings.val.theme === 'system',
+                  checked: DataState.settings.val.theme === 'system',
                   onchange: () => updateSetting('theme', 'system')
                 }),
                 "System (Default)"
               )
             ),
-            p({ class: "setting-description" }, 
+            p({ class: "setting-description" },
               "Choose your preferred theme or use your system's setting."
             )
           )
@@ -125,12 +103,11 @@ export class SettingsComponent {
 
         div({ class: "settings-group" },
           div({ class: "setting-description" }, () => {
-            const manifest = chrome.runtime.getManifest()
-            return `Version ${manifest.version}`
+            const manifest = chrome.runtime.getManifest();
+            return `Version ${manifest.version}`;
           })
         )
       )
     );
   }
-
 }

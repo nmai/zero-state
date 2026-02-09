@@ -1,0 +1,120 @@
+/* ===== TREE LIST ===== */
+.tree-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tree-list .tree-item {
+  position: relative;
+  display: block;
+  min-height: 2em;
+  line-height: 2em;
+  margin-bottom: 10px;
+  padding-left: 21px;
+}
+
+.tree-list .tree-item:before,
+.tree-list .tree-item:after {
+  content: '';
+  position: absolute;
+  display: block;
+  background-color: light-dark(#d1d5da, #313438);
+}
+
+.tree-list .tree-item:before {
+  top: 0;
+  left: 10px;
+  width: 1px;
+  height: calc(100% + 10px);
+}
+
+.tree-list .tree-item:after {
+  top: 1em;
+  left: 10px;
+  width: 11px;
+  height: 1px;
+}
+
+.tree-list .tree-item:last-child:not(:first-child) {
+  margin-bottom: 0;
+}
+
+.tree-list .tree-item:last-child:before {
+  height: 1em;
+}
+
+.tree-list .tree-item:first-child:before {
+  top: -10px;
+  height: 25px;
+}
+
+.tree-list .tree-item:first-child:not(:last-child):before {
+  top: -10px;
+  height: calc(100% + 20px);
+}
+
+.tree-list .tree-item:last-child:not(:first-child):before {
+  height: 1em;
+}
+
+.tree-list .tree-item > span {
+  display: inline-block;
+  padding: 0 5px;
+  border: 1px solid light-dark(#d1d5da, #313438);
+}
+
+.tree-list .tree-item > span:hover {
+  background-color: var(--hover-bg-color);
+}
+
+.tree-list .tree-item > .tree-list {
+  padding-top: 10px;
+}
+
+/* ===== TEXT STYLING ===== */
+.text-parent {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.text-child {
+  font-weight: normal;
+  font-size: 14px;
+}
+
+.text-linethrough {
+  text-decoration: line-through;
+}
+
+/* ===== EDITABLE NODE ===== */
+.editable-node {
+  position: relative;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+  background-color: rgba(255, 235, 59, 0.25);
+  border: 1px dashed rgba(255, 215, 0, 0.5);
+}
+
+.editable-node:hover {
+  background-color: rgba(255, 235, 59, 0.4);
+  cursor: pointer;
+}
+
+/* ===== FAVICON ===== */
+.favicon {
+  max-height: 18px;
+  float: left;
+  padding: 5px;
+  padding-right: 6px;
+}
+
+.border-effect {
+  filter:
+    drop-shadow(1px 0 0 white)
+    drop-shadow(0 1px 0 white)
+    drop-shadow(-1px 0 0 white)
+    drop-shadow(0 -1px 0 white);
+}

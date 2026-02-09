@@ -1,17 +1,14 @@
-import { AppState } from './app.state';
-import { ICONS } from './constants';
-import { StorageService } from './storage.service';
-import { FaviconProvider, LinkNodeFlat } from './types';
+import { SVG_ICONS } from '../core/constants';
+import { FaviconProvider, LinkNodeFlat } from '../core/types';
+import { DataState } from '../state/data.state';
+import { UIState } from '../state/ui.state';
 
 export class FaviconService {
-  // Cache for favicon URLs to avoid redundant URL parsing
-  // REVIEW: is this even useful?
   private static faviconCache: Map<string, string> = new Map();
-  // REVIEW: This seems pretty extra when we could just include a svg icon in filesystem
   private static _genericIconBlob: string;
   private static get genericIconBlob(): string {
     if (!this._genericIconBlob) {
-      this._genericIconBlob = svgToUrl(ICONS.LINK);
+      this._genericIconBlob = svgToUrl(SVG_ICONS['link']);
     }
     return this._genericIconBlob;
   }
@@ -19,28 +16,24 @@ export class FaviconService {
   static displayIcon(node: LinkNodeFlat): boolean {
     if (!node.url) return false;
     if (node.icon === FaviconProvider.None) return false;
-    // Hide if in edit mode
-    if (AppState.editMode.val) return false;
+    if (UIState.editMode.val) return false;
     return true;
   }
 
   static getIcon(urlStr: string, provider?: FaviconProvider): string {
     const url = new URL(urlStr);
-    
+
     switch (provider) {
-      // Chrome built-in favicon cache
       case FaviconProvider.Chrome:
         const cacheUrl = new URL(chrome.runtime.getURL("/_favicon/"));
         cacheUrl.searchParams.set("pageUrl", urlStr);
         cacheUrl.searchParams.set("size", "32");
         return cacheUrl.toString();
       case FaviconProvider.DuckDuckGo:
-        // Return from cache if available
         if (this.faviconCache.has(urlStr)) {
           return this.faviconCache.get(urlStr)!;
         }
         try {
-          // Use DuckDuckGo's favicon service instead of hardcoded URLs
           const result = `https://icons.duckduckgo.com/ip2/${url.hostname}.ico`;
           this.faviconCache.set(urlStr, result);
           return result;
@@ -48,7 +41,7 @@ export class FaviconService {
           console.error('Invalid URL for favicon:', urlStr, error);
           const fallback = '/static/icons/icon48.png';
           this.faviconCache.set(urlStr, fallback);
-          return fallback; // Fallback to default favicon
+          return fallback;
         }
       case FaviconProvider.Generic:
         return this.genericIconBlob;
@@ -61,25 +54,20 @@ export class FaviconService {
   }
 
   static async shouldRequestPermission() {
-    console.log(`Checking favicon permission`)
     const faviconPermission = await chrome.permissions.contains({permissions: ['favicon']});
-    console.log(`Granted favicon permission:`, faviconPermission)
-    // Already granted permission
     if (faviconPermission) return false;
-    // Request permission if any nodes are depending on the Chrome favicon provider
-    return !!AppState.rawList.val.find(node => node.icon === FaviconProvider.Chrome);
+    return !!DataState.rawList.val.find(node => node.icon === FaviconProvider.Chrome);
   }
 
   static async requestFaviconPermissions() {
     if (await this.shouldRequestPermission()) {
       const granted = await chrome.permissions.request({permissions: ['favicon']});
       if (granted) {
-        console.log(`Favicon permission granted`)
-        AppState.removeFooterMessage('request-favicon-permission');
-        // Force a reload to reload favicons
+        console.log(`Favicon permission granted`);
+        UIState.removeFooterMessage('request-favicon-permission');
         location.reload();
       } else {
-        console.log(`Favicon permission denied. Please change the icon setting for all all items to a different provider to dismiss this message.`)
+        console.log(`Favicon permission denied. Change icon provider to dismiss this message.`);
       }
     }
   }
@@ -87,6 +75,5 @@ export class FaviconService {
 
 function svgToUrl(svg: string): string {
   const blob = new Blob([svg], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  return url;
+  return URL.createObjectURL(blob);
 }

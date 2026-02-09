@@ -1,0 +1,91 @@
+/* ===== TOGGLE & SETTINGS BUTTONS ===== */
+#toggle-form-btn {
+  float: right;
+}
+
+#toggle-form-btn:hover, #settings-btn:hover {
+  color: var(--primary-button-hover-color);
+  transform: translateY(-1px);
+}
+
+#toggle-form-btn:active, #settings-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== MOVE BUTTONS ===== */
+.move-controls {
+  display: inline-block;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.move-btn {
+  display: block;
+  text-align: center;
+  width: 16px;
+  height: 16px;
+  line-height: 14px;
+  font-size: 12px;
+  margin: 1px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  background-color: var(--secondary-bg-color);
+}
+
+.move-btn:hover {
+  background-color: var(--hover-bg-color);
+}
+
+.move-up {
+  margin-bottom: 0;
+}
+
+.move-down {
+  margin-top: 0;
+}
+
+/* ===== NODE EDIT BUTTON ===== */
+.edit-node-btn {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.edit-node-btn:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+/* ===== CLOSE BUTTONS ===== */
+.close-settings-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--secondary-bg-color);
+  transition: background-color 0.2s;
+}
+
+.close-settings-btn:hover {
+  background-color: var(--hover-bg-color);
+}
+
+.close-form-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--hover-bg-color);
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.close-form-btn:hover {
+  background-color: var(--border-color);
+  transform: translateY(-1px);
+}
