@@ -1,0 +1,24 @@
+/* ===== FOOTER ===== */
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 30px;
+  font-size: 12px;
+  z-index: 100;
+}
+
+.footer a {
+  color: var(--footer-link-color);
+  transition: color 0.2s, transform 0.1s;
+  padding: 5px 5px;
+}
+
+.footer a:hover {
+  color: var(--primary-button-color);
+  transform: translateY(-1px);
+}

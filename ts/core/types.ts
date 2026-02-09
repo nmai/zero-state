@@ -1,4 +1,3 @@
-// Types and Interfaces
 export interface LinkNodeFlat {
   name: string;
   url?: string;
@@ -30,9 +29,13 @@ export interface Settings {
   theme: 'light' | 'dark' | 'system';
 }
 
+// NOTE: The string values here are persisted in chrome.storage.sync.
+// Changing them would break settings for existing users.
 export enum FaviconProvider {
   Chrome = 'chrome',
   DuckDuckGo = 'duck',
   Generic = 'gen',
   None = 'none',
 }
+
+export type FooterMessage = 'request-favicon-permission';

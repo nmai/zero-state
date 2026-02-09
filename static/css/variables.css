@@ -1,0 +1,60 @@
+/* ===== THEME VARIABLES ===== */
+:root {
+  color-scheme: light dark;
+
+  /* Base colors */
+  --background-color: white;
+  --text-color: #24292e;
+  --link-color: #0366d6;
+
+  /* UI elements */
+  --primary-button-color: #4285f4;
+  --primary-button-hover-color: #1a73e8;
+  --border-color: #d1d5da;
+  --secondary-bg-color: #f6f8fa;
+  --hover-bg-color: #e1e4e8;
+  --footer-link-color: rgba(0,0,0,.5);
+}
+
+/* Dark mode variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #101010;
+    --text-color: #bdc1c6;
+    --link-color: #4D99FA;
+
+    --primary-button-color: #8ab4f8;
+    --primary-button-hover-color: #aecbfa;
+    --border-color: #313438;
+    --secondary-bg-color: #202124;
+    --hover-bg-color: #303134;
+    --footer-link-color: rgba(255,255,255,.5);
+  }
+}
+
+/* Explicit theme classes */
+.theme-light {
+  --background-color: white;
+  --text-color: #24292e;
+  --link-color: #0366d6;
+
+  --primary-button-color: #4285f4;
+  --primary-button-hover-color: #1a73e8;
+  --border-color: #d1d5da;
+  --secondary-bg-color: #f6f8fa;
+  --hover-bg-color: #e1e4e8;
+  --footer-link-color: rgba(0,0,0,.5);
+}
+
+.theme-dark {
+  --background-color: #101010;
+  --text-color: #bdc1c6;
+  --link-color: #4D99FA;
+
+  --primary-button-color: #8ab4f8;
+  --primary-button-hover-color: #aecbfa;
+  --border-color: #313438;
+  --secondary-bg-color: #202124;
+  --hover-bg-color: #303134;
+  --footer-link-color: rgba(255,255,255,.5);
+}
