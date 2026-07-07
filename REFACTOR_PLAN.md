@@ -3,6 +3,13 @@
 **Branch:** `refactor/cleanup` (off `dev`)
 **Date:** 2026-07-07
 **Scope:** ~1,300 lines of TypeScript across 13 files in `ts/`
+**Status:** ✅ Complete — all phases executed on 2026-07-07. Phases 2–5 landed
+as one commit (a module-by-module rewrite made "restructure first, fix bugs
+later" artificial — reintroducing known bugs into freshly written code just to
+fix them a commit later serves no one). Two additional latent bugs were found
+and fixed during the rewrite: renaming a parent orphaned its children (their
+`parent` refs kept the old name), and a node could be made its own ancestor,
+silently detaching it from the rendered tree forever.
 
 ## Context
 
@@ -88,66 +95,67 @@ src/
     side-panel.ts         toggle button + form container
 test/
   tree.test.ts            tree building: parents, orphans, ordering
-  validation.test.ts      form validation rules
-  settings.test.ts        settings merge with defaults
+  validation.test.ts      form validation rules incl. cycle detection
+  storage.test.ts         settings merge with defaults, node normalization
+  ui.test.ts              jsdom smoke test: reactive render + right-click flow
 ```
 
 ## Phases
 
 ### Phase 0 — Baseline & tooling
-- [ ] Create branch `refactor/cleanup` from `dev`; commit this plan
-- [ ] Replace 13KB template `tsconfig.json` with a minimal strict config
+- [x] Create branch `refactor/cleanup` from `dev`; commit this plan
+- [x] Replace 13KB template `tsconfig.json` with a minimal strict config
       (`noEmit`, `noUnusedLocals`, `noUnusedParameters`, `include: ["src"]`)
-- [ ] `package.json`: move `typescript` to devDependencies, bump `esbuild`
+- [x] `package.json`: move `typescript` to devDependencies, bump `esbuild`
       to 0.28.x (open dependabot suggestion), drop stale `main` field,
       add `private: true`, add `typecheck` script
-- [ ] Verify: `npm run build` + `npx tsc --noEmit` green before any code moves
+- [x] Verify: `npm run build` + `npx tsc --noEmit` green before any code moves
 
 ### Phase 1 — Framework decision
 - [x] Evaluate VanJS vs Alpine (and Svelte) — **keep VanJS** (rationale above);
       no code change
 
 ### Phase 2 — Restructure & idiom cleanup
-- [ ] Move `ts/` → `src/` with the target layout above; update build scripts
-- [ ] Convert every static-only class to plain module functions
-- [ ] Delete dead code: `createdTable` state, commented-out validator,
+- [x] Move `ts/` → `src/` with the target layout above; update build scripts
+- [x] Convert every static-only class to plain module functions
+- [x] Delete dead code: `createdTable` state, commented-out validator,
       commented-out close button, unused imports, stale comments in
       `index.html`
-- [ ] Make `tree.ts` pure — no `AppState` writes, no JSON-string memo cache
+- [x] Make `tree.ts` pure — no `AppState` writes, no JSON-string memo cache
       (the list is ≤512 items; rebuild cost is trivial)
 
 ### Phase 3 — Data flow: single mutation path
-- [ ] `state.ts`: `root` and `names` become `van.derive`d from `rawList` —
+- [x] `state.ts`: `root` and `names` become `van.derive`d from `rawList` —
       no more manual rebuild calls or `updateNames()` bookkeeping;
       drop `nameToIndexMap` (linear lookup is fine at this scale)
-- [ ] `actions.ts`: `addNode`, `updateNode`, `removeNode`, `moveNode`,
+- [x] `actions.ts`: `addNode`, `updateNode`, `removeNode`, `moveNode`,
       `toggleComplete`, `updateSettings` — each snapshots `rawList`,
       applies the change, persists, and restores the snapshot on failure.
       Replaces all copy-pasted save/rebuild blocks and fixes bug #3
 
 ### Phase 4 — Component decomposition
-- [ ] Split `UiComponents` into `tree-view.ts` / `side-panel.ts`; components
+- [x] Split `UiComponents` into `tree-view.ts` / `side-panel.ts`; components
       become plain functions
-- [ ] Break up the 240-line `EditForm.renderAddForm` into form-state helpers +
+- [x] Break up the 240-line `EditForm.renderAddForm` into form-state helpers +
       render; use `settings.rawVal` in the populate-derive so unrelated
       settings changes don't clobber an in-progress edit
-- [ ] Move all form validation into `services/validation.ts` (replaces the
+- [x] Move all form validation into `services/validation.ts` (replaces the
       commented-out `ValidatorService` block); show errors inline in the form
       instead of `alert()`
 
 ### Phase 5 — Bug fixes & small enhancements
-- [ ] Fix settings merge spread typo (#1)
-- [ ] Guard hotkeys against firing while an input/select/textarea has focus (#2)
-- [ ] Fix `getIcon` fallbacks + move `new URL` inside the guard (#4)
-- [ ] Immutable footer-message updates (#5)
-- [ ] Use `CURRENT_LIST_VERSION` constant in `printStartupInfo` (#6)
+- [x] Fix settings merge spread typo (#1)
+- [x] Guard hotkeys against firing while an input/select/textarea has focus (#2)
+- [x] Fix `getIcon` fallbacks + move `new URL` inside the guard (#4)
+- [x] Immutable footer-message updates (#5)
+- [x] Use `CURRENT_LIST_VERSION` constant in `printStartupInfo` (#6)
 
 ### Phase 6 — Tests, verification & docs
-- [ ] Add `vitest` (+ `jsdom` if a DOM test proves easy); unit tests for
+- [x] Add `vitest` (+ `jsdom` if a DOM test proves easy); unit tests for
       tree building, validation, settings merge
-- [ ] Verify: `npm run build`, `npm run typecheck`, `npm test` all green;
+- [x] Verify: `npm run build`, `npm run typecheck`, `npm test` all green;
       bundle size compared against pre-refactor 42.2 KB
-- [ ] Update README dev section (build/watch/typecheck/test/pkg)
+- [x] Update README dev section (build/watch/typecheck/test/pkg)
 
 ## Out of scope (possible follow-ups)
 

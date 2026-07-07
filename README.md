@@ -28,6 +28,26 @@ Chrome web store: https://chromewebstore.google.com/detail/zero-state/diloncejoo
 4. **Mark as complete** with right-click for strikethrough effect (can be disabled in settings for normal right-click behavior)
 5. **Remove items** using the delete button (appears next to leaf nodes when in edit mode)
 
+## Development
+
+```sh
+npm install
+npm run watch      # rebuild dist/app.js on change
+npm run build      # one-off dev build (with sourcemaps)
+npm run build-min  # minified production build
+npm run typecheck  # tsc --noEmit
+npm test           # vitest unit + jsdom smoke tests
+```
+
+Load the repo root as an unpacked extension (`chrome://extensions` → Developer mode → Load unpacked); `manifest.json` points at `static/` and `dist/`. For a store package, run `npm run pkg` and zip the `pkg/` folder.
+
+### Architecture
+
+- `src/state.ts` — VanJS reactive state; the display tree and name index derive automatically from the flat `rawList`
+- `src/actions.ts` — every user mutation: swap the new list in, persist to `chrome.storage.sync`, roll back on failure
+- `src/services/` — pure logic (tree building, validation) and browser wrappers (storage, favicons, theme)
+- `src/components/` — VanJS UI components (tree view, edit form, settings modal, footer)
+
 ## Screenshots
 ![screenshot](misc/v2.0.0-dark.png)
 ![screenshot](misc/v2.0.0-light.png)

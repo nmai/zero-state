@@ -10,7 +10,7 @@
     "watch": "esbuild --watch src/app.ts --bundle --sourcemap --outfile=dist/app.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "pkg": "cp manifest.json pkg/ && cp -r static pkg/ && cp -r dist pkg/ && cp -r _locales pkg/"
+    "pkg": "node scripts/pkg.mjs"
   },
   "repository": {
     "type": "git",
@@ -28,6 +28,8 @@
   "devDependencies": {
     "@types/chrome": "^0.0.307",
     "esbuild": "^0.28.1",
-    "typescript": "^5.8.2"
+    "jsdom": "^27.0.1",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.7"
   }
 }
