@@ -36,3 +36,11 @@ export enum FaviconProvider {
   Generic = 'gen',
   None = 'none',
 }
+
+/** Helpers exposed as window.zeroState for use from the DevTools console. */
+export interface ConsoleHelpers {
+  /** The current list and settings as JSON text in the versioned export format. */
+  exportData(): string;
+  /** Replaces the list (and any settings present) from an export; JSON text or parsed object. */
+  importData(payload: unknown): Promise<boolean>;
+}

@@ -1,7 +1,8 @@
+import { buildExport, parseExport } from './services/export';
 import { needsFaviconPermission, requestFaviconPermission } from './services/favicon';
-import { saveList, saveSettings } from './services/storage';
+import { applyNodeDefaults, saveList, saveSettings } from './services/storage';
 import { applyTheme } from './services/theme';
-import { addFooterMessage, rawList, removeFooterMessage, settings } from './state';
+import { addFooterMessage, exitAllModes, rawList, removeFooterMessage, settings } from './state';
 import { LinkNodeFlat, Settings } from './types';
 
 /**
@@ -101,4 +102,28 @@ export async function requestFaviconPermissionIfNeeded(): Promise<void> {
   } else {
     console.log('Favicon permission denied. Change all icon settings to another provider to dismiss the notice.');
   }
+}
+
+/** The current list and settings as pretty-printed JSON in the versioned export format. */
+export function exportData(): string {
+  const exported = buildExport(rawList.val, settings.val, chrome.runtime.getManifest().version);
+  return JSON.stringify(exported, null, 2);
+}
+
+/**
+ * Replaces the whole list, and any settings the payload carries, from an export.
+ * Accepts the JSON text or the parsed object. Throws before touching anything
+ * if the payload can't be read; see parseExport() for what is checked.
+ */
+export async function importData(payload: unknown): Promise<boolean> {
+  const { list, settings: patch } = parseExport(payload);
+  applyNodeDefaults(list);
+
+  exitAllModes(); // a half-edited node from the old list would be stale
+  if (!(await persistList(list, 'Failed to import data.'))) return false;
+  if (patch && !(await updateSettings(patch))) return false;
+  void syncFaviconPermissionNotice();
+
+  console.log(`Imported ${list.length} item(s)${patch ? ' and settings' : ''}.`);
+  return true;
 }

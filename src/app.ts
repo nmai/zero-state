@@ -1,4 +1,4 @@
-import { syncFaviconPermissionNotice } from './actions';
+import { exportData, importData, syncFaviconPermissionNotice } from './actions';
 import { Footer } from './components/footer';
 import { SettingsModal } from './components/settings-modal';
 import { SidePanel } from './components/side-panel';
@@ -7,7 +7,7 @@ import { LIST_STORAGE_KEY, SETTINGS_STORAGE_KEY } from './constants';
 import { applyNodeDefaults, loadList, loadSettings, printStartupInfo } from './services/storage';
 import { applyTheme } from './services/theme';
 import { exitAllModes, rawList, settings, settingsMode, toggleEditMode } from './state';
-import { LinkNodeFlat, Settings } from './types';
+import { ConsoleHelpers, LinkNodeFlat, Settings } from './types';
 import { add, div } from './van';
 
 function Overlay() {
@@ -78,5 +78,16 @@ async function initializeApp(): Promise<void> {
     alert('Failed to load data. Please refresh the page to try again.');
   }
 }
+
+declare global {
+  interface Window {
+    zeroState: ConsoleHelpers;
+  }
+}
+
+// Console helpers for backups and manual testing. Installed before startup so they
+// still work when initializeApp() fails, e.g. to import a good backup over bad data.
+window.zeroState = { exportData, importData };
+console.log('Console helpers: copy(zeroState.exportData()) to back up, zeroState.importData(json) to restore.');
 
 void initializeApp();

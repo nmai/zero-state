@@ -50,6 +50,23 @@ Screenshot baselines in `e2e/visual.spec.ts-snapshots/` are platform-specific. A
 
 Not covered: the native prompt for the optional `favicon` permission, which Playwright cannot click. That flow stays manual.
 
+### Backup and restore from the console
+
+Open DevTools on the New Tab page (F12) and use the helpers on `window.zeroState`:
+
+```js
+copy(zeroState.exportData())   // puts a JSON export on the clipboard
+zeroState.importData(json)     // replaces the list and settings; takes the JSON text or the parsed object
+```
+
+The export is a versioned wrapper around the stored data, so the shape can change later without breaking old files:
+
+```json
+{ "format": "zero-state", "version": 1, "exportedAt": "...", "appVersion": "2.0.0", "list": [...], "settings": {...} }
+```
+
+Imports are validated first (format and version, node shape, unique names, no parent loops, `settings` optional) and nothing changes if validation fails. Handy for seeding test data: import a small list, poke at it, then import your real export back.
+
 ### Architecture
 
 - `src/state.ts` — VanJS reactive state; the display tree and name index derive automatically from the flat `rawList`
