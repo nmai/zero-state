@@ -10,7 +10,8 @@
     "watch": "esbuild --watch src/app.ts --bundle --sourcemap --outfile=dist/app.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "pkg": "node scripts/pkg.mjs"
+    "pkg": "node scripts/pkg.mjs",
+    "test:e2e": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -26,7 +27,9 @@
     "vanjs-core": "^1.5.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/chrome": "^0.0.307",
+    "@types/node": "^26.5.0",
     "esbuild": "^0.28.1",
     "jsdom": "^27.0.1",
     "typescript": "^5.8.2",

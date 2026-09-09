@@ -37,9 +37,18 @@ npm run build      # one-off dev build (with sourcemaps)
 npm run build-min  # minified production build
 npm run typecheck  # tsc --noEmit
 npm test           # vitest unit + jsdom smoke tests
+npm run test:e2e   # playwright: drives the extension in real Chromium (once: npx playwright install chromium)
 ```
 
 Load the repo root as an unpacked extension (`chrome://extensions` → Developer mode → Load unpacked); `manifest.json` points at `static/` and `dist/`. For a store package, run `npm run pkg` and zip the `pkg/` folder.
+
+### End-to-end tests
+
+`npm run test:e2e` loads the repo root as an unpacked extension into a fresh headless Chromium profile per test and drives the real New Tab page: the first-run welcome data, `chrome.storage.sync` round-trips across reloads, cross-tab sync through `onChanged`, the settings modal, and screenshot baselines. Specs live in `e2e/`; `e2e/fixtures.ts` holds the context setup and locator helpers. Add `--headed` or `--ui` to watch a run.
+
+Screenshot baselines in `e2e/visual.spec.ts-snapshots/` are platform-specific. After an intentional visual change, regenerate them with `npx playwright test --update-snapshots`.
+
+Not covered: the native prompt for the optional `favicon` permission, which Playwright cannot click. That flow stays manual.
 
 ### Architecture
 
