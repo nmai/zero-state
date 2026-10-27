@@ -44,7 +44,7 @@ src/
 ├── types.ts                # Interfaces (LinkNodeFlat, LinkNode, Settings, ConsoleHelpers) and FaviconProvider enum
 ├── constants.ts            # Storage keys, inline SVG/text icons, favicon provider labels, default settings
 ├── van.ts                  # VanJS re-exports (dependency isolation)
-├── state.ts                # All reactive state: rawList, derived root/names, UI modes, footer messages
+├── state.ts                # All reactive state: rawList, settings, UI modes, footer messages
 ├── actions.ts              # Every user mutation: swap in the new list, persist, roll back on failure; export/import
 ├── services/
 │   ├── storage.ts          # chrome.storage.sync load/save, settings merge, node normalization, first-run seed data
@@ -88,7 +88,7 @@ chrome.storage.sync ↔ services/storage.ts ↔ actions.ts ↔ state.ts ↔ comp
 ```
 
 - Data is stored as a **flat array** of `LinkNodeFlat` objects with parent references (by name)
-- `rawList` in `state.ts` is the single source of truth. `root` (the display tree, via `buildTree()`) and `names` are `van.derive`d from it, so there are no manual rebuilds
+- `rawList` in `state.ts` is the single source of truth. `TreeView` builds the display tree from it with `buildTree()` on every render, so there are no manual rebuilds
 - `actions.ts` is the only place that changes `rawList` for user edits. `persistList()` snapshots the old list, swaps in the new one, saves, and restores the snapshot (with an `alert`) if the save fails
 - Components call functions in `actions.ts` for anything that persists. UI-only state (`editMode`, `settingsMode`, `editingNode`, `footerMessages`) lives in `state.ts` and isn't persisted
 - Sibling order is flat-list order; moving an item up/down swaps the two nodes' positions in the flat list
@@ -130,6 +130,7 @@ The console export format (`services/export.ts`) is versioned. If you change its
 - Components never call `saveList`/`saveSettings` directly; they go through `actions.ts`
 - Immutable state updates: always assign a new array/object/Set to `.val` (`rawList`, `settings`, `footerMessages`), never mutate in place
 - Keep `services/tree.ts`, `validation.ts`, and `export.ts` pure; that's what makes them unit-testable
+- `van.derive` recomputes on the next task (VanJS batches updates with `setTimeout`), not when its inputs change. Don't render from a derived state at mount: it still holds its old value, so the first paint shows stale or empty UI. Compute it inside the binding instead (as `TreeView` does with `buildTree()`)
 - Read state through `.rawVal` inside a `derive` when you don't want the dependency (e.g. the edit form reads `settings.rawVal` so a settings change doesn't wipe an in-progress edit)
 - Form validation lives in `services/validation.ts` and returns a message or `null`; the form shows it inline (`.form-error`) rather than with `alert()`
 - Keyboard shortcuts ignore keypresses while an input, select, textarea, or contenteditable has focus (`isTypingTarget` in `app.ts`)

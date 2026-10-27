@@ -69,7 +69,7 @@ Imports are validated first (format and version, node shape, unique names, no pa
 
 ### Architecture
 
-- `src/state.ts` — VanJS reactive state; the display tree and name index derive automatically from the flat `rawList`
+- `src/state.ts` — VanJS reactive state; the flat `rawList` is the source of truth, and the tree view builds the display tree from it on each render
 - `src/actions.ts` — every user mutation: swap the new list in, persist to `chrome.storage.sync`, roll back on failure
 - `src/services/` — pure logic (tree building, validation) and browser wrappers (storage, favicons, theme)
 - `src/components/` — VanJS UI components (tree view, edit form, settings modal, footer)

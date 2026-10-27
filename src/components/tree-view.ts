@@ -1,8 +1,8 @@
 import { removeNode, swapNodes, toggleTaskComplete } from '../actions';
 import { ICONS } from '../constants';
 import { getFaviconUrl } from '../services/favicon';
-import { hasChildren } from '../services/tree';
-import { editMode, editingNode, root, settings } from '../state';
+import { buildTree, hasChildren } from '../services/tree';
+import { editMode, editingNode, rawList, settings } from '../state';
 import { FaviconProvider, LinkNode } from '../types';
 import { a, div, img, li, span, ul } from '../van';
 
@@ -112,10 +112,12 @@ function ChildList(nodes: LinkNode[]) {
 
 /**
  * The full tree of lists. Rendered inside a reactive binding, so it re-renders
- * whenever rawList (via root), editMode, or settings change.
+ * whenever rawList, editMode, or settings change. The tree is built here rather
+ * than in a van.derive: derived states update a task later, so the first render
+ * would show an empty page before the tree.
  */
 export function TreeView() {
-  const tree = root.val;
+  const tree = buildTree(rawList.val);
   const container = { id: 'lists-container', class: 'row main-content' };
   if (!tree.children?.length) return div(container);
 
