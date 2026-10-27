@@ -94,7 +94,7 @@ chrome.storage.sync ↔ services/storage.ts ↔ actions.ts ↔ state.ts ↔ comp
 - Sibling order is flat-list order; moving an item up/down swaps the two nodes' positions in the flat list
 - Renaming a node remaps its children's `parent` references (`updateNode`)
 - `storage.ts` remembers the last-saved JSON and skips writes that wouldn't change anything
-- `app.ts` listens to `chrome.storage.onChanged`, so edits in other tabs or synced devices show up live
+- `app.ts` listens to `chrome.storage.onChanged`, so edits in other tabs or synced devices show up live. Incoming settings go through `mergeSettings()` too, since another device may still run an older version
 - On first run (nothing stored), the list comes from `static/json/initial-data-2.0.0.json`; it isn't written to storage until the first edit
 
 ### Chrome Storage Constraints
@@ -105,7 +105,7 @@ See `notes.md` for details. Key limits:
 - 8kb per key
 - All node data is stored under a single key (`links-v1`); settings are under `settings-v1`
 
-**Important**: Storage contents are user data. Don't rename `LIST_STORAGE_KEY`/`SETTINGS_STORAGE_KEY` or change the stored node shape without a migration. The `FaviconProvider` enum string values (`'chrome'`, `'duck'`, `'gen'`, `'none'`) are persisted too. Never change them; doing so would break existing users' data and settings.
+**Important**: Storage contents are user data. Don't rename `LIST_STORAGE_KEY`/`SETTINGS_STORAGE_KEY` or change the stored node shape without a migration. Older versions' data is still out there: 0.0.4 stored nodes without `icon`/`border` and with `taskComplete: false` (normalized by `applyNodeDefaults()`), and 2.0.0 saved a stray `DEFAULT_SETTINGS` object inside the settings (dropped by `mergeSettings()`). `e2e/upgrade.spec.ts` covers both. The `FaviconProvider` enum string values (`'chrome'`, `'duck'`, `'gen'`, `'none'`) are persisted too. Never change them; doing so would break existing users' data and settings.
 
 The console export format (`services/export.ts`) is versioned. If you change its shape, bump `EXPORT_VERSION` and keep `parseExport()` able to read the old version.
 
@@ -126,6 +126,7 @@ The console export format (`services/export.ts`) is versioned. If you change its
 ### Patterns
 
 - Plain exported module functions. No static-only classes (the refactor removed them)
+- A VanJS binding (`() => ...` child) must never return `null` or `undefined`: VanJS removes the node and never brings it back, even when the condition later becomes true. Return `''` for "nothing" (`() => show ? div(...) : ''`)
 - Components never call `saveList`/`saveSettings` directly; they go through `actions.ts`
 - Immutable state updates: always assign a new array/object/Set to `.val` (`rawList`, `settings`, `footerMessages`), never mutate in place
 - Keep `services/tree.ts`, `validation.ts`, and `export.ts` pure; that's what makes them unit-testable
@@ -144,7 +145,9 @@ The console export format (`services/export.ts`) is versioned. If you change its
 
 - **Unit (`test/`)**: vitest. `ui.test.ts` runs under jsdom with a minimal `chrome` stub installed *before* the app modules are dynamically imported. VanJS batches DOM updates asynchronously, so tests wait (`flush()`) before asserting on the DOM
 - **End-to-end (`e2e/`)**: Playwright loads the repo root as an unpacked extension in a fresh persistent Chromium profile per test and opens `chrome://newtab/`. `global-setup.ts` rebuilds `dist/app.js` first, and all external requests (favicons) are stubbed locally. Use the helpers in `fixtures.ts` (`treeItem`, `toggleEditMode`, `openSettings`, `storedList`, `storedSettings`, `openNewTab`) rather than raw selectors
-- **Screenshot baselines** in `e2e/visual.spec.ts-snapshots/` are platform-specific, and only `-win32` baselines are committed. On other platforms the visual tests fail and Playwright writes new `-<platform>.png` files, so don't commit those by accident. After an intentional visual change, regenerate with `npx playwright test --update-snapshots`
+- **Upgrade tests** (`e2e/upgrade.spec.ts`) seed storage with older versions' data before the page starts. `e2e/legacy-data/storage-2.0.0.json` was captured from the real 2.0.0 build (master at 2201a25) driven in Chromium, not written by hand. When a release changes what gets stored, capture its data the same way and add a test
+- **Save failures** (`e2e/save-failure.spec.ts`) go over the real 8 KB-per-key sync quota to make `chrome.storage` reject; `test/actions.test.ts` covers every action's rollback with a rejecting stub
+- **Screenshot baselines** in `e2e/visual.spec.ts-snapshots/` are compared pixel by pixel and are platform-specific: `-win32` and `-linux` are committed. The page sets no `font-family`, so the baselines depend on the OS's default sans-serif font; the Linux ones were generated on Ubuntu 24.04 (arm64), where that's Roboto. A Linux box with a different default font will fail them. On a platform without baselines, the visual tests fail and Playwright writes new `-<platform>.png` files. After an intentional visual change, regenerate with `npx playwright test --update-snapshots` and look at the images before committing
 - `npm run typecheck` only covers `src/`; vitest and Playwright strip types from `test/` and `e2e/` without checking them
 - Not covered: the native prompt for the optional `favicon` permission, which Playwright can't click
 
