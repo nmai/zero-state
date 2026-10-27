@@ -82,3 +82,11 @@ export function storedList(page: Page): Promise<LinkNodeFlat[] | undefined> {
 export function storedSettings(page: Page): Promise<Settings | undefined> {
   return page.evaluate(async key => (await chrome.storage.sync.get(key))[key], SETTINGS_STORAGE_KEY);
 }
+
+/**
+ * Writes raw items to chrome.storage.sync, as another device or an older version would.
+ * Open tabs see it through onChanged; reload to start up from it instead.
+ */
+export function writeStorage(page: Page, items: Record<string, unknown>): Promise<void> {
+  return page.evaluate(data => chrome.storage.sync.set(data), items);
+}

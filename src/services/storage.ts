@@ -36,9 +36,14 @@ export async function loadList(): Promise<LinkNodeFlat[]> {
   return initialData;
 }
 
-/** Fills in defaults for any settings keys missing from storage. */
+/**
+ * Fills in defaults for any settings keys missing from storage, and drops keys this
+ * version doesn't know, such as the stray DEFAULT_SETTINGS object that 2.0.0 saved.
+ */
 export function mergeSettings(stored: Partial<Settings> | undefined): Settings {
-  return { ...DEFAULT_SETTINGS, ...stored };
+  const known = Object.entries(stored ?? {})
+    .filter(([key, value]) => Object.hasOwn(DEFAULT_SETTINGS, key) && value !== undefined);
+  return { ...DEFAULT_SETTINGS, ...Object.fromEntries(known) };
 }
 
 export async function loadSettings(): Promise<Settings> {

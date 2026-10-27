@@ -4,7 +4,7 @@ import { SettingsModal } from './components/settings-modal';
 import { SidePanel } from './components/side-panel';
 import { TreeView } from './components/tree-view';
 import { LIST_STORAGE_KEY, SETTINGS_STORAGE_KEY } from './constants';
-import { applyNodeDefaults, loadList, loadSettings, printStartupInfo } from './services/storage';
+import { applyNodeDefaults, loadList, loadSettings, mergeSettings, printStartupInfo } from './services/storage';
 import { applyTheme } from './services/theme';
 import { exitAllModes, rawList, settings, settingsMode, toggleEditMode } from './state';
 import { ConsoleHelpers, LinkNodeFlat, Settings } from './types';
@@ -62,7 +62,8 @@ async function initializeApp(): Promise<void> {
         applyListUpdate((changes[LIST_STORAGE_KEY].newValue as LinkNodeFlat[] | undefined) ?? []);
       }
       if (changes[SETTINGS_STORAGE_KEY]) {
-        applySettingsUpdate(changes[SETTINGS_STORAGE_KEY].newValue as Settings);
+        // Another device may run an older version, or the key may have been removed
+        applySettingsUpdate(mergeSettings(changes[SETTINGS_STORAGE_KEY].newValue as Partial<Settings> | undefined));
       }
     });
 

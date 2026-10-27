@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '../src/constants';
 import { applyNodeDefaults, mergeSettings } from '../src/services/storage';
-import { FaviconProvider, LinkNodeFlat } from '../src/types';
+import { FaviconProvider, LinkNodeFlat, Settings } from '../src/types';
 
 describe('mergeSettings', () => {
   it('returns defaults when nothing is stored', () => {
@@ -18,6 +18,21 @@ describe('mergeSettings', () => {
   it('does not leak a DEFAULT_SETTINGS key into the result', () => {
     // Regression: the old code spread { DEFAULT_SETTINGS, ...data }
     expect(Object.keys(mergeSettings({}))).toEqual(Object.keys(DEFAULT_SETTINGS));
+  });
+
+  it('drops keys it does not know, such as the stray DEFAULT_SETTINGS that 2.0.0 stored', () => {
+    // The shape 2.0.0 actually saved (see e2e/legacy-data/storage-2.0.0.json)
+    const stored = {
+      DEFAULT_SETTINGS: { ...DEFAULT_SETTINGS },
+      defaultFaviconProvider: 'chrome',
+      enableRightClickComplete: false,
+      theme: 'dark',
+    } as Partial<Settings>;
+    expect(mergeSettings(stored)).toEqual({
+      defaultFaviconProvider: FaviconProvider.Chrome,
+      enableRightClickComplete: false,
+      theme: 'dark',
+    });
   });
 });
 
