@@ -150,7 +150,8 @@ export function EditFormPanel() {
       ),
     ), br(),
 
-    () => errorMessage.val ? div({ class: 'form-error' }, errorMessage.val) : null,
+    // '' rather than null: once a VanJS binding returns null its node is removed for good
+    () => errorMessage.val ? div({ class: 'form-error' }, errorMessage.val) : '',
 
     div({ class: 'form-actions' },
       input({ type: 'submit', value: () => (isEditing() ? 'Update' : 'Add') }),
@@ -160,7 +161,7 @@ export function EditFormPanel() {
             value: 'Cancel',
             onclick: () => { editingNode.val = null; },
           })
-        : null,
+        : '',
     ),
 
     ul({ class: 'form-hint' },

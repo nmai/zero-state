@@ -4,6 +4,7 @@ import { a, div, span } from '../van';
 
 export function Footer() {
   return div({ class: 'footer' },
+    // '' rather than null: once a VanJS binding returns null its node is removed for good
     () => footerMessages.val.has('request-favicon-permission')
       ? div(
           a({
@@ -17,7 +18,7 @@ export function Footer() {
             span({}, 'Alternatively, change all icons to use a different provider.'),
           ),
         )
-      : null,
+      : '',
     div(
       a({
         href: '#',

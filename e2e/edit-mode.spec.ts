@@ -44,6 +44,41 @@ test.describe('edit mode', () => {
       .not.toContain('Example Item 1');
   });
 
+  test('invalid input shows an inline error and saves nothing', async ({ page }) => {
+    await toggleEditMode(page);
+    const error = page.locator('#newlink-form .form-error');
+    await expect(error).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Add' }).click();
+    await expect(error).toHaveText('Name must be populated');
+
+    await page.locator('#newlink-name').fill('Example Item 1');
+    await page.getByRole('button', { name: 'Add' }).click();
+    await expect(error).toHaveText('Name already taken');
+    expect(await storedList(page)).toBeUndefined();
+
+    await page.locator('#newlink-name').fill('Something new');
+    await page.getByRole('button', { name: 'Add' }).click();
+    await expect(treeItem(page, 'Something new')).toBeVisible();
+    await expect(error).toHaveCount(0);
+  });
+
+  test('Cancel abandons an edit without saving it', async ({ page }) => {
+    await toggleEditMode(page);
+    const cancel = page.getByRole('button', { name: 'Cancel' });
+    await expect(cancel).toHaveCount(0);
+
+    await treeItem(page, 'Example Item 1').locator(':scope > span').click();
+    await page.locator('#newlink-name').fill('Changed my mind');
+    await cancel.click();
+
+    await expect(page.locator('#newlink-form .form-header')).toHaveText('Add New Item');
+    await expect(page.locator('#newlink-name')).toHaveValue('');
+    await expect(cancel).toHaveCount(0);
+    await expect(treeItem(page, 'Example Item 1')).toBeVisible();
+    expect(await storedList(page)).toBeUndefined();
+  });
+
   test('right-click marks an item done and it stays done after a reload', async ({ page }) => {
     const label = treeItem(page, 'Example Item 2').locator(':scope > span');
     await label.click({ button: 'right' });

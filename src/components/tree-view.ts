@@ -60,7 +60,7 @@ function NodeContent(node: LinkNode) {
       a({ href: node.url, onclick: startEditing },
         () => showFavicon(node)
           ? img({ src: getFaviconUrl(node.url!, node.icon ?? FaviconProvider.Chrome), class: faviconClasses(node) })
-          : null,
+          : '',
         node.name,
       ),
     );
