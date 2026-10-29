@@ -60,9 +60,10 @@ works and ships, but it accumulated organizational debt:
 
 | Criterion | VanJS (current) | Alpine.js |
 |---|---|---|
-| MV3 CSP compatibility | Clean — no eval anywhere | **Blocked**: core evaluates `x-on`/`x-data` expressions via `new Function()`, which MV3's mandatory `script-src 'self'` (no `unsafe-eval`) forbids. The special CSP build works but disallows inline expressions entirely — only bare method references — erasing Alpine's main ergonomic advantage. |
+| MV3 CSP compatibility | Clean — no eval anywhere | Only through the `@alpinejs/csp` build. The standard build evaluates `x-on`/`x-data` expressions via `new Function()`, which MV3's mandatory `script-src 'self'` (no `unsafe-eval`) forbids. Since 3.15.0 the CSP build parses expressions itself and handles most inline syntax (ternaries, `!`/`&&`, comparisons, `count++`, `x = 0`, method calls with arguments), but not arrow functions, template literals, spread, `??`, `+=`, property assignment (`form.name = ''`), or globals such as `Math` and `JSON`. |
 | Rendering model | Data-driven functional components; recursive tree rendering is natural | Progressive enhancement of existing HTML; recursive structures require awkward nested `x-for`/template tricks |
-| Size | ~1.2 KB gzip, zero transitive deps | ~15 KB gzip |
+| Type checking | Components are TypeScript under `tsc --strict` | Expressions live in HTML attribute strings that `tsc` never sees |
+| Size | ~1.2 KB gzip, zero transitive deps | ~24 KB gzip for the CSP build (3.17.5; the standard build is ~20 KB) |
 | Migration cost | Zero | Full rewrite of every component |
 
 The pain in this codebase is *structural* (static classes, duplicated
@@ -70,6 +71,15 @@ persistence logic, dead state), not framework-caused. VanJS's reactive
 `state`/`derive` primitives are a good fit and stay. Svelte (an abandoned
 `svelte` branch exists) was also considered and rejected: it adds a compiler
 and component-file toolchain that a 1.3K-line extension doesn't need.
+
+*Corrected 2026-10-29:* the CSP row originally said the CSP build disallows
+inline expressions entirely. That was already out of date when this plan was
+written: the expression parser landed in 3.15.0 (September 2025). The size
+row was also low. The decision stands on the rendering model, type checking
+and size. A re-check the same day against Preact + signals, lit-html, Solid,
+Svelte 5 and Arrow.js found nothing better suited either; Solid's no-build
+`solid-js/html` calls `new Function()`, so under MV3 it would need its Babel
+JSX plugin.
 
 ## Target structure
 
