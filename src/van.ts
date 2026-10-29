@@ -2,7 +2,7 @@
 import van from 'vanjs-core'
 
 // If importing via <script> tag, use this instead:
-// import type { Van } from "../static/lib/van-1.5.3.js"
+// import type { Van } from "../static/lib/van-1.6.1.js"
 // declare const van: Van
 
 export const { add, state, derive } = van;

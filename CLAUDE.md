@@ -37,7 +37,7 @@ There is no linter. The only CI is the release workflow (`.github/workflows/rele
 ### Tech Stack
 
 - **TypeScript** 5.8 with strict mode (plus `noUnusedLocals`/`noUnusedParameters`), targeting ES2022
-- **VanJS** 1.5.3: ultralight (~1.2 KB gzip) reactive UI framework. Kept deliberately over Alpine.js, which can't run under MV3's CSP; see `REFACTOR_PLAN.md`
+- **VanJS** 1.6.1: ultralight (~1.2 KB gzip) reactive UI framework. Kept deliberately over Alpine.js, which can't run under MV3's CSP; see `REFACTOR_PLAN.md`
 - **esbuild** 0.28: bundler
 - **vitest** 3.2 + **jsdom**: unit and DOM smoke tests
 - **Playwright** 1.63: end-to-end tests against the real extension
@@ -140,7 +140,7 @@ The console export format (`services/export.ts`) is versioned. If you change its
 - Components never call `saveList`/`saveSettings` directly; they go through `actions.ts`
 - Immutable state updates: always assign a new array/object/Set to `.val` (`rawList`, `settings`, `footerMessages`), never mutate in place
 - Keep `services/tree.ts`, `validation.ts`, and `export.ts` pure; that's what makes them unit-testable
-- `van.derive` recomputes on the next task (VanJS batches updates with `setTimeout`), not when its inputs change. Don't render from a derived state at mount: it still holds its old value, so the first paint shows stale or empty UI. Compute it inside the binding instead (as `TreeView` does with `buildTree()`)
+- `van.derive` recomputes in a microtask (VanJS batches updates with `queueMicrotask` since 1.6), not when its inputs change. A synchronous read right after changing an input still gets the old value. Don't render from a derived state at mount: the UI mounts stale or empty and renders again a microtask later. Compute it inside the binding instead (as `TreeView` does with `buildTree()`)
 - Read state through `.rawVal` inside a `derive` when you don't want the dependency (e.g. the edit form reads `settings.rawVal` so a settings change doesn't wipe an in-progress edit)
 - Form validation lives in `services/validation.ts` and returns a message or `null`; the form shows it inline (`.form-error`) rather than with `alert()`
 - Keyboard shortcuts ignore keypresses while an input, select, textarea, or contenteditable has focus (`isTypingTarget` in `app.ts`)

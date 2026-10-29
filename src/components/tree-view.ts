@@ -113,8 +113,8 @@ function ChildList(nodes: LinkNode[]) {
 /**
  * The full tree of lists. Rendered inside a reactive binding, so it re-renders
  * whenever rawList, editMode, or settings change. The tree is built here rather
- * than in a van.derive: derived states update a task later, so the first render
- * would show an empty page before the tree.
+ * than in a van.derive: derived states update a microtask later, so the first
+ * render would mount an empty container and fill it in afterwards.
  */
 export function TreeView() {
   const tree = buildTree(rawList.val);
