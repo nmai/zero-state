@@ -1,7 +1,17 @@
 import { FaviconProvider, Settings } from './types';
 
-/** chrome.storage.sync key holding the flat node list (user data — never rename casually). */
-export const LIST_STORAGE_KEY = 'links-v1';
+/**
+ * chrome.storage.sync key that held the whole node list as one array, up to 2.1.0. Read until
+ * the first edit moves the list to one item per node; after that it stays as an untouched backup.
+ */
+export const LEGACY_LIST_STORAGE_KEY = 'links-v1';
+/** Prefix of the chrome.storage.sync items holding one node each: `links-v2:<id>` (user data). */
+export const NODE_KEY_PREFIX = 'links-v2:';
+/**
+ * chrome.storage.sync key marking that the list has been saved one item per node, so an emptied
+ * list stays empty instead of falling back to the legacy key or the starter data.
+ */
+export const LIST_LAYOUT_KEY = 'links-v2';
 /** chrome.storage.sync key holding user settings. */
 export const SETTINGS_STORAGE_KEY = 'settings-v1';
 
@@ -32,3 +42,9 @@ export const DEFAULT_SETTINGS: Settings = {
   enableRightClickComplete: true,
   theme: 'system',
 };
+
+/**
+ * Most nodes the list can hold. chrome.storage.sync allows 512 items, and up to three of them
+ * aren't nodes: settings, the layout marker, and the legacy list kept as a backup.
+ */
+export const MAX_NODES = 509;

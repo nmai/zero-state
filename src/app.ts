@@ -3,11 +3,13 @@ import { Footer } from './components/footer';
 import { SettingsModal } from './components/settings-modal';
 import { SidePanel } from './components/side-panel';
 import { TreeView } from './components/tree-view';
-import { LIST_STORAGE_KEY, SETTINGS_STORAGE_KEY } from './constants';
-import { applyNodeDefaults, loadList, loadSettings, mergeSettings, printStartupInfo } from './services/storage';
+import { SETTINGS_STORAGE_KEY } from './constants';
+import {
+  applyListChanges, applyNodeDefaults, loadList, loadSettings, mergeSettings, printStartupInfo,
+} from './services/storage';
 import { applyTheme } from './services/theme';
 import { exitAllModes, rawList, settings, settingsMode, toggleEditMode } from './state';
-import { ConsoleHelpers, LinkNodeFlat, Settings } from './types';
+import { ConsoleHelpers, Settings, StoredNode } from './types';
 import { add, div } from './van';
 
 function Overlay() {
@@ -25,7 +27,7 @@ function Main() {
   );
 }
 
-function applyListUpdate(list: LinkNodeFlat[]): void {
+function applyListUpdate(list: StoredNode[]): void {
   applyNodeDefaults(list);
   rawList.val = list;
   void syncFaviconPermissionNotice();
@@ -58,9 +60,8 @@ async function initializeApp(): Promise<void> {
     // Keep this tab in sync with edits made in other tabs/devices
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== 'sync') return;
-      if (changes[LIST_STORAGE_KEY]) {
-        applyListUpdate((changes[LIST_STORAGE_KEY].newValue as LinkNodeFlat[] | undefined) ?? []);
-      }
+      const list = applyListChanges(changes);
+      if (list) applyListUpdate(list);
       if (changes[SETTINGS_STORAGE_KEY]) {
         // Another device may run an older version, or the key may have been removed
         applySettingsUpdate(mergeSettings(changes[SETTINGS_STORAGE_KEY].newValue as Partial<Settings> | undefined));

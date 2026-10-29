@@ -48,13 +48,14 @@ There is no linter. The only CI is the release workflow (`.github/workflows/rele
 ```
 src/
 ├── app.ts                  # Bootstrap only: load storage, mount, wire storage/keyboard listeners, install window.zeroState
-├── types.ts                # Interfaces (LinkNodeFlat, LinkNode, Settings, ConsoleHelpers) and FaviconProvider enum
-├── constants.ts            # Storage keys, inline SVG/text icons, favicon provider labels, default settings
+├── types.ts                # Interfaces (LinkNodeFlat, StoredNode, LinkNode, Settings, ConsoleHelpers) and FaviconProvider enum
+├── constants.ts            # Storage keys, MAX_NODES, inline SVG/text icons, favicon provider labels, default settings
 ├── van.ts                  # VanJS re-exports (dependency isolation)
 ├── state.ts                # All reactive state: rawList, settings, UI modes, footer messages
 ├── actions.ts              # Every user mutation: swap in the new list, persist, roll back on failure; export/import
 ├── services/
-│   ├── storage.ts          # chrome.storage.sync load/save, settings merge, node normalization, first-run seed data
+│   ├── storage.ts          # chrome.storage.sync load/save/onChanged, legacy-key fallback, settings merge, node normalization, first-run seed data
+│   ├── storage-layout.ts   # Pure one-item-per-node layout: node ids, sort orders, record diffs
 │   ├── tree.ts             # Pure flat-list → tree builder
 │   ├── validation.ts       # URL and node-form validation (incl. parent-loop detection)
 │   ├── export.ts           # Versioned export format: build and parse/validate
@@ -97,25 +98,29 @@ UI icons (close, link, [+], [−], arrows) are inline strings in `ICONS` in `con
 chrome.storage.sync ↔ services/storage.ts ↔ actions.ts ↔ state.ts ↔ components ↔ DOM
 ```
 
-- Data is stored as a **flat array** of `LinkNodeFlat` objects with parent references (by name)
+- In memory the list is a **flat array** of `StoredNode`s: `LinkNodeFlat` fields (parent references by name) plus an `id`
+- In `chrome.storage.sync` each node is **its own item**, `links-v2:<id>`, holding its fields plus an `order` number (items have no order of their own). Ties in `order` (two devices adding at once) sort by id. `services/storage-layout.ts` works out the records; see Chrome Storage Constraints below for why
 - `rawList` in `state.ts` is the single source of truth. `TreeView` builds the display tree from it with `buildTree()` on every render, so there are no manual rebuilds
 - `actions.ts` is the only place that changes `rawList` for user edits. `persistList()` snapshots the old list, swaps in the new one, saves, and restores the snapshot (with an `alert`) if the save fails
 - Components call functions in `actions.ts` for anything that persists. UI-only state (`editMode`, `settingsMode`, `editingNode`, `footerMessages`) lives in `state.ts` and isn't persisted
-- Sibling order is flat-list order; moving an item up/down swaps the two nodes' positions in the flat list
-- Renaming a node remaps its children's `parent` references (`updateNode`)
-- `storage.ts` remembers the last-saved JSON and skips writes that wouldn't change anything
-- `app.ts` listens to `chrome.storage.onChanged`, so edits in other tabs or synced devices show up live. Incoming settings go through `mergeSettings()` too, since another device may still run an older version
+- Sibling order is flat-list order; moving an item up/down swaps the two nodes' positions in the flat list. On save, nodes keep their stored `order` wherever it still fits the list (a longest increasing run), so a move rewrites one or two records rather than every node after it
+- A node's `id` never changes. Renaming keeps it (`updateNode` carries it over) and remaps the children's `parent` references, so a rename writes the node and its children in one `set()`
+- Ids for new nodes are derived from the name (`newNodeId()`), not random, so devices that create the same node independently (starter data, the move from the legacy key, the same item added on two devices before they sync) write the same item instead of duplicating it. Don't change the hash in `storage-layout.ts`: devices on different versions would stop agreeing
+- `storage.ts` keeps the records it knows are saved (updated by its own writes and by `onChanged`) and writes only nodes that changed: one `set()` for adds and edits, one `remove()` for deletes. A single `set()` is all-or-nothing, which the rollback relies on
+- `app.ts` listens to `chrome.storage.onChanged` and hands the batch to `applyListChanges()`, so edits in other tabs or synced devices show up live, node by node. Incoming settings go through `mergeSettings()` too, since another device may still run an older version
 - On first run (nothing stored), the list comes from `static/json/initial-data-2.0.0.json`; it isn't written to storage until the first edit
+- A list saved by 2.1.0 or older (the single `links-v1` key) is read as-is until the first edit, which writes every node as its own item plus the `links-v2` marker in one `set()`. `links-v1` is then left untouched as a backup and no longer read, even if a device still on an old version writes to it. The marker is what keeps an emptied list from falling back to `links-v1` or the starter data
 
 ### Chrome Storage Constraints
 
 See `notes.md` for details. Key limits:
-- 512 items max
-- 100kb total across all keys
-- 8kb per key
-- All node data is stored under a single key (`links-v1`); settings are under `settings-v1`
+- 512 items max: this is the one that binds now, so the list holds at most `MAX_NODES` (509) nodes. The other three items are `settings-v1`, the `links-v2` marker, and the `links-v1` backup. The form refuses a new node at the cap and `parseExport()` refuses a bigger import
+- 100kb total across all keys (counted as key length plus the value's JSON in UTF-8)
+- 8kb per item, so per node
+- Writes are limited to 120 per minute and 1,800 per hour, counted per `set()`/`remove()` call however many keys it touches
+- Keys: `links-v2:<id>` per node, `links-v2` (marker, `true`), `settings-v1`, and `links-v1` (legacy whole-list array, read only before the move)
 
-**Important**: Storage contents are user data. Don't rename `LIST_STORAGE_KEY`/`SETTINGS_STORAGE_KEY` or change the stored node shape without a migration. Older versions' data is still out there: 0.0.4 stored nodes without `icon`/`border` and with `taskComplete: false` (normalized by `applyNodeDefaults()`), and 2.0.0 saved a stray `DEFAULT_SETTINGS` object inside the settings (dropped by `mergeSettings()`). `e2e/upgrade.spec.ts` covers both. The `FaviconProvider` enum string values (`'chrome'`, `'duck'`, `'gen'`, `'none'`) are persisted too. Never change them; doing so would break existing users' data and settings.
+**Important**: Storage contents are user data. Don't rename `LEGACY_LIST_STORAGE_KEY`/`NODE_KEY_PREFIX`/`LIST_LAYOUT_KEY`/`SETTINGS_STORAGE_KEY` or change the stored node shape without a migration. Older versions' data is still out there: 0.0.4 stored nodes without `icon`/`border` and with `taskComplete: false` (normalized by `applyNodeDefaults()`), and 2.0.0 saved a stray `DEFAULT_SETTINGS` object inside the settings (dropped by `mergeSettings()`). `e2e/upgrade.spec.ts` covers both. The `FaviconProvider` enum string values (`'chrome'`, `'duck'`, `'gen'`, `'none'`) are persisted too. Never change them; doing so would break existing users' data and settings.
 
 The console export format (`services/export.ts`) is versioned. If you change its shape, bump `EXPORT_VERSION` and keep `parseExport()` able to read the old version.
 
@@ -125,7 +130,7 @@ The console export format (`services/export.ts`) is versioned. If you change its
 
 - **PascalCase** for components (functions that return VanJS elements): `TreeView`, `SidePanel`, `EditFormPanel`, `SettingsModal`, `Footer`
 - **camelCase** for functions and variables: `addNode`, `buildTree`, `validateNodeForm`
-- **UPPER_SNAKE_CASE** for constants: `LIST_STORAGE_KEY`, `DEFAULT_SETTINGS`, `ICONS`, `EXPORT_VERSION`
+- **UPPER_SNAKE_CASE** for constants: `SETTINGS_STORAGE_KEY`, `DEFAULT_SETTINGS`, `ICONS`, `EXPORT_VERSION`
 
 ### File Naming
 
@@ -139,7 +144,7 @@ The console export format (`services/export.ts`) is versioned. If you change its
 - A VanJS binding (`() => ...` child) must never return `null` or `undefined`: VanJS removes the node and never brings it back, even when the condition later becomes true. Return `''` for "nothing" (`() => show ? div(...) : ''`)
 - Components never call `saveList`/`saveSettings` directly; they go through `actions.ts`
 - Immutable state updates: always assign a new array/object/Set to `.val` (`rawList`, `settings`, `footerMessages`), never mutate in place
-- Keep `services/tree.ts`, `validation.ts`, and `export.ts` pure; that's what makes them unit-testable
+- Keep `services/tree.ts`, `validation.ts`, `export.ts`, and `storage-layout.ts` pure; that's what makes them unit-testable
 - `van.derive` recomputes in a microtask (VanJS batches updates with `queueMicrotask` since 1.6), not when its inputs change. A synchronous read right after changing an input still gets the old value. Don't render from a derived state at mount: the UI mounts stale or empty and renders again a microtask later. Compute it inside the binding instead (as `TreeView` does with `buildTree()`)
 - Read state through `.rawVal` inside a `derive` when you don't want the dependency (e.g. the edit form reads `settings.rawVal` so a settings change doesn't wipe an in-progress edit)
 - Form validation lives in `services/validation.ts` and returns a message or `null`; the form shows it inline (`.form-error`) rather than with `alert()`
@@ -155,9 +160,10 @@ The console export format (`services/export.ts`) is versioned. If you change its
 ## Testing
 
 - **Unit (`test/`)**: vitest. `ui.test.ts` runs under jsdom with a minimal `chrome` stub installed *before* the app modules are dynamically imported. VanJS batches DOM updates asynchronously, so tests wait (`flush()`) before asserting on the DOM
-- **End-to-end (`e2e/`)**: Playwright loads the repo root as an unpacked extension in a fresh persistent Chromium profile per test and opens `chrome://newtab/`. `global-setup.ts` rebuilds `dist/app.js` first, and all external requests (favicons) are stubbed locally. Use the helpers in `fixtures.ts` (`treeItem`, `toggleEditMode`, `openSettings`, `storedList`, `storedSettings`, `openNewTab`) rather than raw selectors
-- **Upgrade tests** (`e2e/upgrade.spec.ts`) seed storage with older versions' data before the page starts. `e2e/legacy-data/storage-2.0.0.json` was captured from the real 2.0.0 build (master at 2201a25) driven in Chromium, not written by hand. When a release changes what gets stored, capture its data the same way and add a test
-- **Save failures** (`e2e/save-failure.spec.ts`) go over the real 8 KB-per-key sync quota to make `chrome.storage` reject; `test/actions.test.ts` covers every action's rollback with a rejecting stub
+- **End-to-end (`e2e/`)**: Playwright loads the repo root as an unpacked extension in a fresh persistent Chromium profile per test and opens `chrome://newtab/`. `global-setup.ts` rebuilds `dist/app.js` first, and all external requests (favicons) are stubbed locally. Use the helpers in `fixtures.ts` (`treeItem`, `toggleEditMode`, `openSettings`, `storedList`, `storedLegacyList`, `storedItems`, `storedSettings`, `writeStorage`, `openNewTab`) rather than raw selectors. `storedList` puts the list back together from its per-node items on its own, without the app's code, so it checks the stored layout independently
+- **Upgrade tests** (`e2e/upgrade.spec.ts`) seed storage with older versions' data before the page starts. `e2e/legacy-data/storage-2.0.0.json` was captured from the real 2.0.0 build (master at 2201a25) driven in Chromium, not written by hand. When a release changes what gets stored, capture its data the same way and add a test. The release after 2.1.0 moved the list to one item per node, so capture that release's storage once it ships
+- **Save failures** (`e2e/save-failure.spec.ts`) put a single node over the real 8 KB-per-item sync quota to make `chrome.storage` reject; `test/actions.test.ts` covers every action's rollback with a rejecting stub
+- **Capacity** (`e2e/capacity.spec.ts`) saves a list several times the old 8 KB limit, and fills all 512 sync items (with settings and a legacy list present) to check `MAX_NODES` against the real quota
 - **Screenshot baselines** in `e2e/visual.spec.ts-snapshots/` are compared pixel by pixel and are platform-specific: `-win32` and `-linux` are committed. The page sets no `font-family`, so the baselines depend on the OS's default sans-serif font; the Linux ones were generated on Ubuntu 24.04 (arm64), where that's Roboto. A Linux box with a different default font will fail them. On a platform without baselines, the visual tests fail and Playwright writes new `-<platform>.png` files. After an intentional visual change, regenerate with `npx playwright test --update-snapshots` and look at the images before committing
 - `npm run typecheck` only covers `src/`; vitest and Playwright strip types from `test/` and `e2e/` without checking them
 - Not covered: the native prompt for the optional `favicon` permission, which Playwright can't click

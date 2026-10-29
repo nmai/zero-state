@@ -1,15 +1,16 @@
 import { buildExport, parseExport } from './services/export';
 import { needsFaviconPermission, requestFaviconPermission } from './services/favicon';
 import { applyNodeDefaults, saveList, saveSettings } from './services/storage';
+import { newNodeId, withIds, withoutId } from './services/storage-layout';
 import { applyTheme } from './services/theme';
 import { addFooterMessage, exitAllModes, rawList, removeFooterMessage, settings } from './state';
-import { LinkNodeFlat, Settings } from './types';
+import { LinkNodeFlat, Settings, StoredNode } from './types';
 
 /**
  * Central mutation path for the node list: swap in the next list (the tree
  * re-derives automatically), persist it, and roll back if the save fails.
  */
-async function persistList(next: LinkNodeFlat[], failureMessage: string): Promise<boolean> {
+async function persistList(next: StoredNode[], failureMessage: string): Promise<boolean> {
   const previous = rawList.val;
   rawList.val = next;
   try {
@@ -24,17 +25,18 @@ async function persistList(next: LinkNodeFlat[], failureMessage: string): Promis
 }
 
 export function addNode(item: LinkNodeFlat): Promise<boolean> {
-  return persistList([...rawList.val, item], 'Failed to save item.');
+  const id = newNodeId(item.name, new Set(rawList.val.map(node => node.id)));
+  return persistList([...rawList.val, { ...item, id }], 'Failed to save item.');
 }
 
 /**
- * Replaces the node named originalName. When the node is being renamed, its
- * children's parent references are remapped so they don't get orphaned.
+ * Replaces the node named originalName, keeping its id. When the node is being
+ * renamed, its children's parent references are remapped so they don't get orphaned.
  */
 export function updateNode(originalName: string, item: LinkNodeFlat): Promise<boolean> {
   const renamed = item.name !== originalName;
   const next = rawList.val.map(node => {
-    if (node.name === originalName) return item;
+    if (node.name === originalName) return { ...item, id: node.id };
     if (renamed && node.parent === originalName) return { ...node, parent: item.name };
     return node;
   });
@@ -106,7 +108,7 @@ export async function requestFaviconPermissionIfNeeded(): Promise<void> {
 
 /** The current list and settings as pretty-printed JSON in the versioned export format. */
 export function exportData(): string {
-  const exported = buildExport(rawList.val, settings.val, chrome.runtime.getManifest().version);
+  const exported = buildExport(rawList.val.map(withoutId), settings.val, chrome.runtime.getManifest().version);
   return JSON.stringify(exported, null, 2);
 }
 
@@ -116,7 +118,8 @@ export function exportData(): string {
  * if the payload can't be read; see parseExport() for what is checked.
  */
 export async function importData(payload: unknown): Promise<boolean> {
-  const { list, settings: patch } = parseExport(payload);
+  const { list: imported, settings: patch } = parseExport(payload);
+  const list = withIds(imported, rawList.val);
   applyNodeDefaults(list);
 
   exitAllModes(); // a half-edited node from the old list would be stale

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Minimal chrome stub — installed before importing app modules
 const storageSet = vi.fn().mockResolvedValue(undefined);
 (globalThis as { chrome?: unknown }).chrome = {
-  storage: { sync: { set: storageSet } },
+  storage: { sync: { set: storageSet, remove: vi.fn().mockResolvedValue(undefined) } },
   permissions: {
     contains: vi.fn().mockResolvedValue(true),
     request: vi.fn().mockResolvedValue(false),
@@ -27,9 +27,9 @@ describe('TreeView', () => {
     document.body.innerHTML = '';
     editMode.val = false;
     rawList.val = [
-      { name: 'Work' },
-      { name: 'Docs', parent: 'Work', url: 'https://docs.example.com' },
-      { name: 'Personal' },
+      { id: 'work', name: 'Work' },
+      { id: 'docs', name: 'Docs', parent: 'Work', url: 'https://docs.example.com' },
+      { id: 'personal', name: 'Personal' },
     ];
     storageSet.mockClear();
   });
@@ -57,7 +57,7 @@ describe('TreeView', () => {
     const container = mount();
     await flush();
 
-    rawList.val = [...rawList.val, { name: 'New item' }];
+    rawList.val = [...rawList.val, { id: 'new', name: 'New item' }];
     await flush();
 
     expect(container.textContent).toContain('New item');

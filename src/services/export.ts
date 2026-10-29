@@ -1,3 +1,4 @@
+import { MAX_NODES } from '../constants';
 import { FaviconProvider, LinkNodeFlat, Settings } from '../types';
 import { isValidUrl } from './validation';
 
@@ -58,6 +59,9 @@ export function parseExport(input: unknown): ImportedData {
   }
   if (!Array.isArray(data.list)) {
     throw new Error('"list" must be an array');
+  }
+  if (data.list.length > MAX_NODES) {
+    throw new Error(`"list" has ${data.list.length} items; the most sync storage can hold is ${MAX_NODES}`);
   }
 
   const list = data.list.map(parseNode);

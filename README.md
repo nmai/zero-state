@@ -44,7 +44,7 @@ Load the repo root as an unpacked extension (`chrome://extensions` → Developer
 
 ### End-to-end tests
 
-`npm run test:e2e` loads the repo root as an unpacked extension into a fresh headless Chromium profile per test and drives the real New Tab page: the first-run welcome data, `chrome.storage.sync` round-trips across reloads, cross-tab sync through `onChanged`, the settings modal, data saved by older versions (0.0.4 and 2.0.0), rollback when a save goes over the sync quota, and screenshot baselines. Specs live in `e2e/`; `e2e/fixtures.ts` holds the context setup and locator helpers. Add `--headed` or `--ui` to watch a run.
+`npm run test:e2e` loads the repo root as an unpacked extension into a fresh headless Chromium profile per test and drives the real New Tab page: the first-run welcome data, `chrome.storage.sync` round-trips across reloads, cross-tab sync through `onChanged`, the settings modal, data saved by older versions (0.0.4 and 2.0.0) and its move to one storage item per node, lists past the old 8 KB limit and up to the 512-item quota, rollback when a save goes over the sync quota, and screenshot baselines. Specs live in `e2e/`; `e2e/fixtures.ts` holds the context setup and locator helpers. Add `--headed` or `--ui` to watch a run.
 
 Screenshot baselines in `e2e/visual.spec.ts-snapshots/` are platform-specific; Windows and Linux baselines are committed. The Linux ones assume Roboto as the default sans-serif font (Ubuntu 24.04). After an intentional visual change, regenerate them with `npx playwright test --update-snapshots`.
 
