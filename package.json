@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/nmai/zero-state#readme",
   "dependencies": {
-    "vanjs-core": "^1.5.3"
+    "vanjs-core": "^1.6.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
