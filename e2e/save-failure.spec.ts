@@ -2,8 +2,8 @@ import type { Page } from '@playwright/test';
 import { FaviconProvider } from '../src/types';
 import { expect, openNewTab, storedList, test, toggleEditMode, treeItem } from './fixtures';
 
-// chrome.storage.sync caps a single key at 8 KB (QUOTA_BYTES_PER_ITEM) and the whole list
-// lives in one key, so an item that pushes the list past that is a real, reachable failure.
+// chrome.storage.sync caps a single item at 8 KB (QUOTA_BYTES_PER_ITEM) and each node is
+// stored as its own item, so one node that big is a real, reachable failure.
 const oversizedUrl = `https://example.com/${'x'.repeat(9000)}`;
 
 /** Collects alert() messages, dismissing each one. */

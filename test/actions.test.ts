@@ -1,10 +1,20 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// The list as saved one item per node, which loadList() reads in each test
+const storedItems = {
+  'links-v2': true,
+  'links-v2:work': { name: 'Work', order: 0 },
+  'links-v2:docs': { name: 'Docs', parent: 'Work', url: 'https://example.com/', order: 1 },
+  'links-v2:home': { name: 'Home', order: 2 },
+};
+
 // Minimal chrome stub — installed before importing app modules
+const storageGet = vi.fn(async () => structuredClone(storedItems));
 const storageSet = vi.fn().mockResolvedValue(undefined);
+const storageRemove = vi.fn().mockResolvedValue(undefined);
 (globalThis as { chrome?: unknown }).chrome = {
-  storage: { sync: { set: storageSet } },
+  storage: { sync: { get: storageGet, set: storageSet, remove: storageRemove } },
   permissions: {
     contains: vi.fn().mockResolvedValue(true),
     request: vi.fn().mockResolvedValue(false),
@@ -15,26 +25,44 @@ const storageSet = vi.fn().mockResolvedValue(undefined);
   },
 };
 
-const { addNode, importData, removeNode, swapNodes, toggleTaskComplete, updateNode, updateSettings } =
+const { addNode, exportData, importData, removeNode, swapNodes, toggleTaskComplete, updateNode, updateSettings } =
   await import('../src/actions');
 const { DEFAULT_SETTINGS } = await import('../src/constants');
+const { loadList } = await import('../src/services/storage');
 const { applyTheme } = await import('../src/services/theme');
 const { rawList, settings } = await import('../src/state');
 
 const quotaError = new Error('QUOTA_BYTES_PER_ITEM quota exceeded');
 const alertSpy = vi.fn();
 
+beforeEach(async () => {
+  storageSet.mockReset().mockResolvedValue(undefined);
+  storageRemove.mockReset().mockResolvedValue(undefined);
+  rawList.val = await loadList();
+});
+
+describe('storage ids', () => {
+  it('updateNode keeps the node\'s id, so a rename rewrites its item in place', async () => {
+    expect(await updateNode('Work', { name: 'Office' })).toBe(true);
+    expect(rawList.val.find(node => node.name === 'Office')?.id).toBe('work');
+    expect(Object.keys(storageSet.mock.calls[0][0]).sort()).toEqual(['links-v2:docs', 'links-v2:work']);
+    expect(storageRemove).not.toHaveBeenCalled();
+  });
+
+  it('exportData leaves them out of the backup', () => {
+    expect(JSON.parse(exportData()).list).toEqual([
+      { name: 'Work' },
+      { name: 'Docs', parent: 'Work', url: 'https://example.com/' },
+      { name: 'Home' },
+    ]);
+  });
+});
+
 describe('actions roll back when chrome.storage rejects the save', () => {
   beforeEach(() => {
     vi.stubGlobal('alert', alertSpy);
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    storageSet.mockReset().mockResolvedValue(undefined);
     alertSpy.mockReset();
-    rawList.val = [
-      { name: 'Work' },
-      { name: 'Docs', parent: 'Work', url: 'https://example.com/' },
-      { name: 'Home' },
-    ];
   });
 
   afterEach(() => {
@@ -42,18 +70,19 @@ describe('actions roll back when chrome.storage rejects the save', () => {
     vi.restoreAllMocks();
   });
 
+  // A delete only removes its node's item; everything else writes with set()
   it.each([
-    ['addNode', () => addNode({ name: 'New' })],
-    ['updateNode (rename with a child)', () => updateNode('Work', { name: 'Office' })],
-    ['removeNode', () => removeNode('Docs')],
-    ['swapNodes', () => swapNodes('Work', 'Home')],
-    ['toggleTaskComplete', () => toggleTaskComplete('Home')],
-  ])('%s restores the previous list and reports the failure', async (_label, action) => {
+    ['addNode', () => addNode({ name: 'New' }), storageSet],
+    ['updateNode (rename with a child)', () => updateNode('Work', { name: 'Office' }), storageSet],
+    ['removeNode', () => removeNode('Docs'), storageRemove],
+    ['swapNodes', () => swapNodes('Work', 'Home'), storageSet],
+    ['toggleTaskComplete', () => toggleTaskComplete('Home'), storageSet],
+  ])('%s restores the previous list and reports the failure', async (_label, action, write) => {
     const before = rawList.val;
-    storageSet.mockRejectedValueOnce(quotaError);
+    write.mockRejectedValueOnce(quotaError);
 
     expect(await action()).toBe(false);
-    expect(storageSet).toHaveBeenCalledOnce();
+    expect(write).toHaveBeenCalledOnce();
     expect(rawList.val).toBe(before);
     expect(alertSpy).toHaveBeenCalledWith(expect.stringMatching(/Please try again\.$/));
   });

@@ -1,39 +1,84 @@
-import { DEFAULT_SETTINGS, LIST_STORAGE_KEY, SETTINGS_STORAGE_KEY } from '../constants';
-import { FaviconProvider, LinkNodeFlat, Settings } from '../types';
+import {
+  DEFAULT_SETTINGS, LEGACY_LIST_STORAGE_KEY, LIST_LAYOUT_KEY, SETTINGS_STORAGE_KEY,
+} from '../constants';
+import { FaviconProvider, LinkNodeFlat, Settings, StoredNode } from '../types';
+import {
+  diffRecords, idFromKey, listFromRecords, nodeKey, NodeRecord, readRecords, recordsFromList, withIds,
+} from './storage-layout';
 
-// Last-saved snapshots let us skip redundant writes — sync quota is small
-// (100KB total, 8KB per key) and writes are rate-limited.
-let lastSavedListJson = '';
+// What this page knows is in chrome.storage.sync: the node records (kept current by
+// saveList() and applyListChanges()) and whether the layout marker has been written.
+// Saves write only the difference, since the sync quota is small and writes are rate-limited.
+let savedRecords = new Map<string, NodeRecord>();
+let layoutSaved = false;
 let lastSavedSettingsJson = '';
 
-export async function saveList(list: LinkNodeFlat[]): Promise<void> {
-  // Deep-clone to break references, then strip transient properties
-  const clean = JSON.parse(JSON.stringify(list)) as (LinkNodeFlat & { children?: unknown })[];
-  clean.forEach(node => delete node.children);
+/**
+ * Saves the list one item per node, writing only the nodes that changed and removing the
+ * ones that are gone. The first save also moves a legacy or starter list into this layout.
+ */
+export async function saveList(list: StoredNode[]): Promise<void> {
+  const records = recordsFromList(list, savedRecords);
+  const { set, remove } = diffRecords(savedRecords, records);
+  const items: Record<string, unknown> = layoutSaved ? set : { ...set, [LIST_LAYOUT_KEY]: true };
 
-  const json = JSON.stringify(clean);
-  if (json === lastSavedListJson) return;
-
-  await chrome.storage.sync.set({ [LIST_STORAGE_KEY]: clean });
-  lastSavedListJson = json;
+  // One set() is all-or-nothing, so a rejected save leaves storage as it was
+  if (Object.keys(items).length > 0) {
+    await chrome.storage.sync.set(items);
+    for (const [key, record] of Object.entries(set)) savedRecords.set(idFromKey(key)!, record);
+    layoutSaved = true;
+  }
+  if (remove.length > 0) {
+    await chrome.storage.sync.remove(remove.map(nodeKey));
+    for (const id of remove) savedRecords.delete(id);
+  }
 }
 
-export async function loadList(): Promise<LinkNodeFlat[]> {
-  const result = await chrome.storage.sync.get(LIST_STORAGE_KEY);
-  const stored = result[LIST_STORAGE_KEY] as LinkNodeFlat[] | undefined;
-  if (stored) {
-    lastSavedListJson = JSON.stringify(stored);
-    return stored;
-  }
+export async function loadList(): Promise<StoredNode[]> {
+  const items = await chrome.storage.sync.get(null);
+  savedRecords = readRecords(items);
+  layoutSaved = items[LIST_LAYOUT_KEY] !== undefined || savedRecords.size > 0;
+  if (layoutSaved) return listFromRecords(savedRecords);
+
+  // Not saved one item per node yet: show the list 2.1.0 and older stored under one key. It
+  // moves to the new layout on the first edit, so loading alone writes nothing.
+  const legacy = items[LEGACY_LIST_STORAGE_KEY] as LinkNodeFlat[] | undefined;
+  if (legacy) return withIds(legacy);
 
   // First run: seed from the bundled starter data (the "welcome screen").
   // NOTE: keep this JSON file in sync with the latest data format.
   console.log('No data found, loading initial-data JSON file instead...');
   const url = chrome.runtime.getURL('/static/json/initial-data-2.0.0.json');
   const response = await fetch(url);
-  const initialData = (await response.json()) as LinkNodeFlat[];
-  lastSavedListJson = JSON.stringify(initialData);
-  return initialData;
+  return withIds((await response.json()) as LinkNodeFlat[]);
+}
+
+/**
+ * Folds a chrome.storage.onChanged batch into what this page knows is saved, and returns the
+ * list to show if it changed. Changes to the legacy key only count until the list has moved to
+ * one item per node; after that they can only come from a device still running 2.1.0 or older.
+ */
+export function applyListChanges(changes: Record<string, chrome.storage.StorageChange>): StoredNode[] | undefined {
+  let changed = false;
+  for (const [key, { newValue }] of Object.entries(changes)) {
+    if (key === LIST_LAYOUT_KEY) {
+      layoutSaved = newValue !== undefined;
+      changed = true;
+      continue;
+    }
+    const id = idFromKey(key);
+    if (id === undefined) continue;
+    if (newValue === undefined) savedRecords.delete(id);
+    else savedRecords.set(id, newValue as NodeRecord);
+    changed = true;
+  }
+  if (changed) return listFromRecords(savedRecords);
+
+  const legacy = changes[LEGACY_LIST_STORAGE_KEY];
+  if (legacy && !layoutSaved && savedRecords.size === 0) {
+    return withIds((legacy.newValue as LinkNodeFlat[] | undefined) ?? []);
+  }
+  return undefined;
 }
 
 /**
@@ -81,7 +126,12 @@ export function applyNodeDefaults(nodes: LinkNodeFlat[]): void {
 }
 
 export async function printStartupInfo(): Promise<void> {
-  const bytesInUse = await chrome.storage.sync.getBytesInUse(LIST_STORAGE_KEY);
-  const maxBytes = chrome.storage.sync.QUOTA_BYTES_PER_ITEM;
-  console.log(`Bytes in use: ${bytesInUse} (${Math.ceil((bytesInUse / maxBytes) * 100)}%)`);
+  const { sync } = chrome.storage;
+  const [bytesInUse, items] = await Promise.all([sync.getBytesInUse(null), sync.get(null)]);
+  const percent = (used: number, max: number) => Math.ceil((used / max) * 100);
+  const itemCount = Object.keys(items).length;
+  console.log(
+    `Sync storage: ${bytesInUse} of ${sync.QUOTA_BYTES} bytes (${percent(bytesInUse, sync.QUOTA_BYTES)}%), `
+    + `${itemCount} of ${sync.MAX_ITEMS} items (${percent(itemCount, sync.MAX_ITEMS)}%)`,
+  );
 }

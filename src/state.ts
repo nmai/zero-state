@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS } from './constants';
-import { LinkNodeFlat, Settings } from './types';
+import { LinkNodeFlat, Settings, StoredNode } from './types';
 import { state } from './van';
 
 export type FooterMessage = 'request-favicon-permission';
@@ -14,7 +14,7 @@ export const footerMessages = state<ReadonlySet<FooterMessage>>(new Set());
  * Flat source of truth, mirrored to chrome.storage. Always replace, never mutate.
  * TreeView builds the display tree from it on each render.
  */
-export const rawList = state<LinkNodeFlat[]>([]);
+export const rawList = state<StoredNode[]>([]);
 
 export function toggleEditMode(): void {
   editMode.val = !editMode.val;

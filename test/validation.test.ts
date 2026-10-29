@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_NODES } from '../src/constants';
 import { isValidUrl, validateNodeForm } from '../src/services/validation';
 import { LinkNodeFlat } from '../src/types';
 
@@ -27,6 +28,13 @@ describe('validateNodeForm', () => {
   it('accepts a valid new node', () => {
     expect(validateNodeForm({ ...base })).toBeNull();
     expect(validateNodeForm({ ...base, url: 'https://x.com', parent: 'a' })).toBeNull();
+  });
+
+  it('refuses a new node once the list holds as many as sync storage can, but still allows edits', () => {
+    const full = Array.from({ length: MAX_NODES }, (_, index) => ({ name: `item ${index}` }));
+    expect(validateNodeForm({ ...base, nodes: full })).toMatch(/^The list is full \(509 items\)/);
+    expect(validateNodeForm({ ...base, nodes: full.slice(1) })).toBeNull();
+    expect(validateNodeForm({ ...base, name: 'item 0', nodes: full, originalName: 'item 0' })).toBeNull();
   });
 
   it('requires a name', () => {

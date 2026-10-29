@@ -170,8 +170,8 @@ test/
 ## Out of scope (possible follow-ups)
 
 - Drag-and-drop reordering (replacing ↑/↓ buttons)
-- Splitting storage across multiple sync keys to raise the 8KB-per-item ceiling
-  (see `notes.md`)
+- ~~Splitting storage across multiple sync keys to raise the 8KB-per-item ceiling
+  (see `notes.md`)~~ Done after 2.1.0: one sync item per node
 - Checklist feature completion
 - CI workflow (GitHub Actions running build + typecheck + tests)
 

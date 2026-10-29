@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS } from '../src/constants';
+import { DEFAULT_SETTINGS, MAX_NODES } from '../src/constants';
 import { buildExport, EXPORT_FORMAT, EXPORT_VERSION, parseExport } from '../src/services/export';
 import { FaviconProvider, LinkNodeFlat } from '../src/types';
 
@@ -57,6 +57,13 @@ describe('parseExport', () => {
 
   it('requires the list to be an array', () => {
     expect(() => parseExport(wrap({ list: {} }))).toThrow('"list" must be an array');
+  });
+
+  it('rejects a list bigger than sync storage can hold', () => {
+    const items = (count: number) => Array.from({ length: count }, (_, index) => ({ name: `item ${index}` }));
+    expect(parseExport(wrap({ list: items(MAX_NODES) })).list).toHaveLength(MAX_NODES);
+    expect(() => parseExport(wrap({ list: items(MAX_NODES + 1) })))
+      .toThrow('"list" has 510 items; the most sync storage can hold is 509');
   });
 
   it('keeps only known node properties and drops empty optional values', () => {

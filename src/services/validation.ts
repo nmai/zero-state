@@ -1,3 +1,4 @@
+import { MAX_NODES } from '../constants';
 import { LinkNodeFlat } from '../types';
 
 export function isValidUrl(url: string): boolean {
@@ -18,6 +19,9 @@ export interface NodeFormInput {
 export function validateNodeForm({ name, url, parent, nodes, originalName }: NodeFormInput): string | null {
   const names = nodes.map(node => node.name);
 
+  if (originalName === undefined && nodes.length >= MAX_NODES) {
+    return `The list is full (${MAX_NODES} items). Delete something to make room`;
+  }
   if (name.length === 0) {
     return 'Name must be populated';
   }

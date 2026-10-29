@@ -17,6 +17,14 @@ export interface LinkNodeFlat {
   border?: 0 | 1;
 }
 
+/**
+ * A node as rawList holds it: its fields plus the id naming its chrome.storage.sync item
+ * (`links-v2:<id>`). The id never changes, even when the node is renamed.
+ */
+export interface StoredNode extends LinkNodeFlat {
+  id: string;
+}
+
 export interface LinkNode extends LinkNodeFlat {
   children?: LinkNode[];
 }
