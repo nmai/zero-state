@@ -37,7 +37,7 @@ There is no linter. The only CI is the release workflow (`.github/workflows/rele
 ### Tech Stack
 
 - **TypeScript** 5.8 with strict mode (plus `noUnusedLocals`/`noUnusedParameters`), targeting ES2022
-- **VanJS** 1.6.1: ultralight (~1.2 KB gzip) reactive UI framework. Kept deliberately over Alpine.js, which can't run under MV3's CSP; see `REFACTOR_PLAN.md`
+- **VanJS** 1.6.1: ultralight (~1.2 KB gzip) reactive UI framework. Kept deliberately over Alpine.js and other lightweight frameworks; see `REFACTOR_PLAN.md`
 - **esbuild** 0.28: bundler
 - **vitest** 3.2 + **jsdom**: unit and DOM smoke tests
 - **Playwright** 1.63: end-to-end tests against the real extension
