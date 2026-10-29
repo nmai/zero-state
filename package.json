@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "pkg": "node scripts/pkg.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "version": "node scripts/version.mjs sync && git add manifest.json"
   },
   "repository": {
     "type": "git",

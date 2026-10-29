@@ -23,7 +23,14 @@ One-time setup for e2e: `npx playwright install chromium`.
 
 To try the extension by hand, load the repo root as an unpacked extension (`chrome://extensions` → Developer mode → Load unpacked); `manifest.json` points at `static/` and `dist/`, so run a build first.
 
-There is no linter or CI pipeline configured.
+There is no linter. The only CI is the release workflow (`.github/workflows/release.yml`), which runs on `v*` tag pushes; nothing runs on PRs or branch pushes.
+
+## Versioning, Releases & Publishing
+
+**Read `DEPLOYMENT.md` before bumping the version, creating or deleting tags, changing `.github/workflows/release.yml`, or touching `scripts/version.mjs` or `scripts/publish-chrome-web-store.mjs`.** It covers the version rules, the release flows, what the workflow does, the one-time Chrome Web Store setup, and recovering from a failed release.
+
+- Bump versions with `npm version` (it keeps `package.json` and `manifest.json` in step), never by editing the files
+- **Pushing a `v*` tag publishes the extension to the Chrome Web Store.** Don't push one unless the user explicitly asks for a release
 
 ## Architecture
 
@@ -63,6 +70,9 @@ src/
 test/                       # vitest: tree, validation, storage, export, ui (jsdom)
 e2e/                        # Playwright specs; fixtures.ts has the context setup and locator helpers
 scripts/pkg.mjs             # Cross-platform packaging script
+scripts/version.mjs         # Syncs manifest.json's version during `npm version`; checks it against a release tag
+scripts/publish-chrome-web-store.mjs  # Uploads a zip via the Chrome Web Store API v2 and submits it for review
+.github/workflows/release.yml         # Tag-triggered release: test, package, submit to the store, GitHub release
 ```
 
 ### Static Assets

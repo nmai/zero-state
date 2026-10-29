@@ -40,7 +40,7 @@ npm test           # vitest unit + jsdom smoke tests
 npm run test:e2e   # playwright: drives the extension in real Chromium (once: npx playwright install chromium)
 ```
 
-Load the repo root as an unpacked extension (`chrome://extensions` → Developer mode → Load unpacked); `manifest.json` points at `static/` and `dist/`. For a store package, run `npm run pkg` and zip the `pkg/` folder.
+Load the repo root as an unpacked extension (`chrome://extensions` → Developer mode → Load unpacked); `manifest.json` points at `static/` and `dist/`. `npm run pkg` assembles a loadable package in `pkg/`. Versioning, releases, and publishing to the Chrome Web Store are described in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### End-to-end tests
 
