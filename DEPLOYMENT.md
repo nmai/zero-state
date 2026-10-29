@@ -79,11 +79,11 @@ Prerequisite: 2-step verification on the Google account that owns the developer 
    gcloud services enable chromewebstore.googleapis.com iam.googleapis.com \
      iamcredentials.googleapis.com sts.googleapis.com --project="$PROJECT_ID"
    ```
-2. **Service account** (it needs no IAM roles):
+2. **Service account** (it needs no IAM roles). A publisher can link only one, so it publishes all of that publisher's extensions; name it for the publisher, not for one extension:
    ```sh
-   gcloud iam service-accounts create zero-state-publisher --project="$PROJECT_ID"
+   gcloud iam service-accounts create web-store-publisher --project="$PROJECT_ID"
    ```
-3. **Link it to the Web Store.** In the [Developer Dashboard](https://chrome.google.com/webstore/devconsole), open **Account** and add `zero-state-publisher@$PROJECT_ID.iam.gserviceaccount.com`. A publisher can link only one service account. While you're there, copy your **publisher ID** from **Publisher > Settings**. It's also the UUID in the dashboard's URL. It isn't the extension ID.
+3. **Link it to the Web Store.** In the [Developer Dashboard](https://chrome.google.com/webstore/devconsole), open **Account** and add `web-store-publisher@$PROJECT_ID.iam.gserviceaccount.com`. A publisher can link only one service account. While you're there, copy your **publisher ID** from **Publisher > Settings**. It's also the UUID in the dashboard's URL. It isn't the extension ID.
 4. **Workload Identity pool and provider.** The condition limits tokens to tag pushes in this repository:
    ```sh
    gcloud iam workload-identity-pools create github \
@@ -98,7 +98,7 @@ Prerequisite: 2-step verification on the Google account that owns the developer 
 5. **Let the repository use the service account:**
    ```sh
    gcloud iam service-accounts add-iam-policy-binding \
-     "zero-state-publisher@$PROJECT_ID.iam.gserviceaccount.com" --project="$PROJECT_ID" \
+     "web-store-publisher@$PROJECT_ID.iam.gserviceaccount.com" --project="$PROJECT_ID" \
      --role=roles/iam.workloadIdentityUser \
      --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/nmai/zero-state"
    ```
@@ -106,9 +106,11 @@ Prerequisite: 2-step verification on the Google account that owns the developer 
    ```sh
    gh variable set GCP_WORKLOAD_IDENTITY_PROVIDER --body "$(gcloud iam workload-identity-pools providers describe zero-state \
      --project="$PROJECT_ID" --location=global --workload-identity-pool=github --format='value(name)')"
-   gh variable set GCP_SERVICE_ACCOUNT --body "zero-state-publisher@$PROJECT_ID.iam.gserviceaccount.com"
+   gh variable set GCP_SERVICE_ACCOUNT --body "web-store-publisher@$PROJECT_ID.iam.gserviceaccount.com"
    gh variable set CWS_PUBLISHER_ID --body "<publisher ID from step 3>"
    ```
+
+This has been done: the project is `chrome-extensions` in Google Cloud, and `gh variable list` shows the provider and service account the workflow uses. Another extension's repository would reuse the same project, service account, and `github` pool, with its own provider (step 4) and binding (step 5).
 
 IAM changes can take a few minutes to apply. There's no dry run: the next release is the first real test. If it fails during authentication, nothing has been uploaded, so fix the setup and re-run the failed job.
 
