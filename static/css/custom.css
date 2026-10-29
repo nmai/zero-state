@@ -568,3 +568,9 @@ a {
   padding: 5px;
   border-top: 1px solid var(--border-color);
 }
+
+.form-error {
+  color: light-dark(#c5221f, #f28b82);
+  font-size: 13px;
+  margin-bottom: 10px;
+}

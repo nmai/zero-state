@@ -1,0 +1,130 @@
+# Releases a version when its tag (v1.2.3) is pushed: verifies and packages it, submits it
+# to the Chrome Web Store, and creates the GitHub release with the same zip attached.
+# DEPLOYMENT.md describes the process and the one-time Chrome Web Store setup.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+
+env:
+  NODE_VERSION: 26
+  CWS_EXTENSION_ID: diloncejoolaamlldicgmhimamhecipj
+
+jobs:
+  package:
+    name: Verify and package
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history, so the tag can be checked against the default branch
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Check the tag
+        id: version
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          node scripts/version.mjs check "$GITHUB_REF_NAME"
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/$DEFAULT_BRANCH"; then
+            echo "::error::$GITHUB_REF_NAME points at a commit that isn't on $DEFAULT_BRANCH. Merge the version bump first, then tag $DEFAULT_BRANCH."
+            exit 1
+          fi
+          echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: End-to-end tests
+        run: |
+          npx playwright install --with-deps chromium
+          # Screenshot baselines depend on the fonts of the machine that made them (DEPLOYMENT.md)
+          npx playwright test --ignore-snapshots
+
+      - name: Build and zip
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          npm run build-min
+          npm run pkg
+          (cd pkg && zip -r "../zero-state-$VERSION.zip" .)
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package
+          path: zero-state-${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+
+  chrome-web-store:
+    name: Submit to the Chrome Web Store
+    needs: package
+    # Skipped until the one-time setup in DEPLOYMENT.md is done
+    if: vars.CWS_PUBLISHER_ID != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # lets google-github-actions/auth exchange GitHub's OIDC token for a Google one
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: package
+
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+
+      - name: Upload and submit for review
+        env:
+          CWS_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          VERSION: ${{ needs.package.outputs.version }}
+        run: node scripts/publish-chrome-web-store.mjs "zero-state-$VERSION.zip" "$VERSION"
+
+  github-release:
+    name: Create the GitHub release
+    needs: [package, chrome-web-store]
+    # Also runs when the store submission was skipped, but not when it failed
+    if: ${{ !cancelled() && needs.package.result == 'success' && needs.chrome-web-store.result != 'failure' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: package
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.package.outputs.version }}
+          STORE_RESULT: ${{ needs.chrome-web-store.result }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "zero-state-$VERSION.zip" \
+            --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
+          if [ "$STORE_RESULT" = skipped ]; then
+            echo "::warning::Not submitted to the Chrome Web Store (CWS_PUBLISHER_ID isn't set). Upload zero-state-$VERSION.zip from the release by hand, or finish the setup in DEPLOYMENT.md."
+          fi
